@@ -33,75 +33,6 @@ struct AppData: Codable, Sendable {
     }
 }
 
-/// Cards available on the Today dashboard. The user adds, removes and
-/// reorders them; the list order is the layout order.
-enum DashboardWidget: String, Codable, CaseIterable, Identifiable, Sendable {
-    case nowNext, today, deadlines, overload, leverage, weekLoad, courseGrades, importHub, study, countdown, seatWatch, inbox
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .nowNext: "Now & next"
-        case .today: "Today"
-        case .deadlines: "Upcoming deadlines"
-        case .overload: "Overload tracker"
-        case .leverage: "Highest-impact work"
-        case .weekLoad: "Week at a glance"
-        case .courseGrades: "Course grades"
-        case .importHub: "Import"
-        case .study: "Study"
-        case .countdown: "Next exam countdown"
-        case .seatWatch: "Seat watch"
-        case .inbox: "Inbox"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .nowNext: "Current class and what's coming"
-        case .today: "Everything on today's timetable"
-        case .deadlines: "Due in the next two weeks"
-        case .overload: "Projected average against your target"
-        case .leverage: "Where study time moves your average most"
-        case .weekLoad: "How heavy each day is"
-        case .courseGrades: "Current grade in each course"
-        case .importHub: "Pull in calendars, schedules and outlines"
-        case .study: "Next assessment and its study pages"
-        case .countdown: "Days until your next midterm or exam"
-        case .seatWatch: "Open seats in sections you're waiting for"
-        case .inbox: "Captured items waiting for a yes"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .nowNext: "clock"
-        case .today: "list.bullet.rectangle"
-        case .deadlines: "flag"
-        case .overload: "gauge.with.dots.needle.67percent"
-        case .leverage: "arrow.up.right.circle"
-        case .weekLoad: "chart.bar"
-        case .courseGrades: "percent"
-        case .importHub: "square.and.arrow.down"
-        case .study: "book"
-        case .countdown: "hourglass"
-        case .seatWatch: "chair"
-        case .inbox: "tray"
-        }
-    }
-
-    /// Wide cards span two columns of the dashboard grid.
-    var isWide: Bool {
-        switch self {
-        case .today, .weekLoad, .courseGrades, .importHub: true
-        default: false
-        }
-    }
-
-    static let defaultLayout: [DashboardWidget] = [.nowNext, .overload, .deadlines, .today, .leverage, .countdown, .weekLoad, .importHub]
-}
-
 struct AppSettings: Codable, Hashable, Sendable {
     // Term
     var termName: String = "Fall 2026"
@@ -119,9 +50,6 @@ struct AppSettings: Codable, Hashable, Sendable {
     var examGap: Double = 8
     var learnExamGap: Bool = true
     var roundCourseGrades: Bool = true
-
-    // Dashboard
-    var dashboard: [DashboardWidget] = DashboardWidget.defaultLayout
 
     // Calendar sync
     var exportToAppleCalendar: Bool = false
@@ -160,9 +88,6 @@ struct AppSettings: Codable, Hashable, Sendable {
         examGap = value(.examGap, defaults.examGap)
         learnExamGap = value(.learnExamGap, defaults.learnExamGap)
         roundCourseGrades = value(.roundCourseGrades, defaults.roundCourseGrades)
-        // Unknown widget kinds from a newer build are dropped, not fatal.
-        let rawDashboard = (try? c.decode([String].self, forKey: .dashboard)) ?? defaults.dashboard.map(\.rawValue)
-        dashboard = rawDashboard.compactMap(DashboardWidget.init(rawValue:))
         exportToAppleCalendar = value(.exportToAppleCalendar, defaults.exportToAppleCalendar)
         exportClasses = value(.exportClasses, defaults.exportClasses)
         exportDeadlines = value(.exportDeadlines, defaults.exportDeadlines)

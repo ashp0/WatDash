@@ -24,8 +24,8 @@ struct MenuBarLabel: View {
     }
 }
 
-/// The menu bar panel: now/next, today's remaining items, what's due, the
-/// overload margin, and a capture field — the whole app in a glance.
+/// The menu bar panel: now/next, today's remaining items, what's due and a
+/// capture field. Grades stay on the Grades screen and the sidebar.
 struct MenuBarView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
@@ -37,19 +37,8 @@ struct MenuBarView: View {
         let today = store.agenda(on: store.now).filter { $0.end >= store.now }
         let due = Array(store.upcomingDeadlines(days: 7).prefix(4))
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(store.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                    .font(.headline)
-                Spacer()
-                if let projected = store.term.projected {
-                    Text("\(projected.oneDecimal) · \(store.term.margin.map { $0.signedOneDecimal } ?? "")")
-                        .font(.caption.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Palette.margin(store.term.margin))
-                        .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(Palette.margin(store.term.margin).opacity(0.14), in: Capsule())
-                        .help("Projected term average vs your \(Int(store.term.target))% target")
-                }
-            }
+            Text(store.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                .font(.headline)
 
             if let current {
                 block(label: "NOW", item: current, trailing: "until \(current.end.shortTime)")

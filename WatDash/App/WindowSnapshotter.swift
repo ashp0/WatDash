@@ -45,11 +45,6 @@ enum WindowSnapshotter {
                     try? await Task.sleep(for: .milliseconds(900))
                     capture(window, to: outputDirectory.appendingPathComponent("\(name).png"))
                 }
-                router.sheet = .dashboardGallery
-                try? await Task.sleep(for: .milliseconds(800))
-                if let sheet = window.attachedSheet { capture(sheet, to: outputDirectory.appendingPathComponent("gallery.png")) }
-                router.sheet = nil
-                try? await Task.sleep(for: .milliseconds(500))
                 let quiz = store.assessments.first(where: { $0.kind == .quiz && !$0.isGraded && $0.coverage != nil }) ?? store.assessments.first(where: { $0.kind == .quiz && !$0.isGraded })
                 router.sheet = .studyPrompt(quiz?.courseCode ?? "", quiz?.id)
                 try? await Task.sleep(for: .milliseconds(800))

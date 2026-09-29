@@ -44,6 +44,7 @@ struct Checks {
         capture()
         ics()
         studyPrompt()
+        focus()
         realFolders()
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -498,6 +499,34 @@ struct Checks {
         course.teachDontAnswer = true
         check(StudyPrompt(course: course, sections: covered, assessment: quiz, classesRoot: "/x").text.contains("strict rule"), "135-style rule included")
         check(prompt.terminalCommand.hasPrefix("cd \"/Users/x/UW Classes\" && claude '"), "terminal command quotes the folder")
+    }
+
+    // MARK: - Focus
+
+    static func focus() {
+        let now = date(2026, 9, 29, 12)
+        func item(_ title: String, _ kind: EventKind, _ start: Date, end: Date? = nil, done: Bool = false) -> AgendaItem {
+            AgendaItem(id: title, origin: .assessment(UUID()), title: title, courseCode: "CS 135", kind: kind,
+                       start: start, end: end ?? start, isAllDay: false, isDone: done)
+        }
+        let agenda = [
+            item("Stale", .assignment, date(2026, 9, 27, 9)),
+            item("Late", .assignment, date(2026, 9, 28, 23, 59)),
+            item("Written quiz", .quiz, date(2026, 9, 29, 9), end: date(2026, 9, 29, 10)),
+            item("Quiz now", .quiz, date(2026, 9, 29, 11, 30), end: date(2026, 9, 29, 12, 30)),
+            item("Due tonight", .assignment, date(2026, 9, 29, 23, 59)),
+            item("Submitted", .assignment, date(2026, 9, 29, 16), done: true),
+            item("Due in 40h", .assignment, date(2026, 10, 1, 4)),
+            item("Assignment in 3d", .assignment, date(2026, 10, 2, 12)),
+            item("Midterm in 5d", .test, date(2026, 10, 4, 19), end: date(2026, 10, 4, 21)),
+            item("Final in 9d", .exam, date(2026, 10, 8, 9), end: date(2026, 10, 8, 11)),
+        ]
+        let entries = Focus.entries(from: agenda, now: now)
+        check(entries.map(\.item.title) == ["Late", "Quiz now", "Due tonight", "Due in 40h", "Midterm in 5d"],
+              "focus keeps late, 48-hour and exam-week work in urgency order, got \(entries.map(\.item.title))")
+        check(entries.map(\.urgency) == [.overdue, .within24h, .within24h, .within48h, .examThisWeek], "focus urgencies")
+        check(Focus.window(around: now).contains(date(2026, 9, 27, 13)) && Focus.window(around: now).contains(date(2026, 10, 6, 11)),
+              "focus window spans the late grace and the exam week")
     }
 
     // MARK: - Real course folders (smoke test, informational)

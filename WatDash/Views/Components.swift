@@ -48,6 +48,39 @@ struct CardHeader: View {
     }
 }
 
+/// A one-line prompt above the Today cards, shown only when something needs
+/// a decision so the screen stays quiet otherwise.
+struct Notice<Actions: View>: View {
+    var symbol: String
+    var title: String
+    var detail: String
+    @ViewBuilder var actions: () -> Actions
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Palette.accentDeep)
+                .frame(width: 26, height: 26)
+                .background(Palette.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.callout.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            actions()
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(.separator.opacity(0.6), lineWidth: 0.5)
+        )
+    }
+}
+
 /// Coloured course code capsule: the one visual that ties a row to its course.
 struct CourseChip: View {
     @Environment(AppStore.self) private var store

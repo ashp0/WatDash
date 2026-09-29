@@ -187,7 +187,6 @@ struct SheetHost: View {
         case .feed: FeedSheet()
         case .appleCalendar: AppleCalendarSheet()
         case .openData: OpenDataSheet()
-        case .dashboardGallery: WidgetGallerySheet()
         case let .newEvent(date): EventEditor(eventID: nil, initialDate: date)
         case let .editEvent(id): EventEditor(eventID: id, initialDate: nil)
         case let .newAssessment(code): AssessmentEditor(assessmentID: nil, courseCode: code)

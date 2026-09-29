@@ -15,17 +15,16 @@ logic verified by plain `swiftc` checks.
 
 | Screen | What it does |
 |---|---|
-| **Today** | A grid of cards you add, remove and drag into order: now & next, today, upcoming deadlines, overload tracker, highest-impact work, two-week load chart, course grades, import, study, next-exam countdown, seat watch, inbox. A setup checklist appears until the term is fully set up. |
-| **Schedule** | Week grid with a live "now" line, overlap-aware columns, click-to-inspect popovers ("skip this one" for a cancelled lecture), double-click to add. Agenda mode for the next four weeks. |
+| **Today** | Answers "what should I be working on right now?" A **Focus** card leads with the most urgent item (overdue up to 48 hours, due in the next 48 hours, or a midterm or exam this week) and its countdown, then the rest of that list with done checkboxes. Below it, **Rest of today** lists only the classes still ahead. One-line notices appear only when the setup is unfinished or captures are waiting. No grades here: they're on Grades and in the sidebar. |
+| **Schedule** | Week grid with a live "now" line, overlap-aware columns, click-to-inspect popovers ("skip this one" for a cancelled lecture), double-click to add. Agenda mode for the next four weeks. Office hours are an optional layer behind a switch (off by default; the same switch covers Today). |
 | **Deadlines** | Overdue / this week / next week / later / TBA, with done checkboxes, marks, and on every quiz, midterm and exam a **Seat** button (your room and seat on Odyssey) and a study-prompt button. |
 | **Grades** | Projected term average with a likely range, chance of clearing the target, the uniform score needed on everything left, a what-if slider, and per-item leverage ("+0.60 on your average per 10 marks"). |
 | **Course** | Grading-scheme editor (weights, item counts, drop-lowest, exam flags, "final replaces midterm", "must pass the exams"), score table with per-item what-if sliders and exemptions, meetings, files, notes page map. |
 | **Study** | Builds a ready-to-paste **Claude Code prompt** for a study page: assessment, sections, notes page ranges, course rules. No API key: Claude Code runs it on your subscription using the `quiz-prep` skill in the classes folder. |
 | **Import** | Eight import tiles plus a list of every source with health, refresh and remove. |
 
-Plus: a **menu bar** panel (now/next, rest of today, due this week, margin to
-80, a capture field), **⌃⌥Space quick capture** from any app, **desktop
-widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
+Plus: a **menu bar** panel (now/next, rest of today, due this week, a capture
+field), **⌃⌥Space quick capture** from any app, **desktop widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
 and optional **Apple Calendar** sync.
 
 ## Getting your term in

@@ -59,7 +59,7 @@ final class Router {
     @ObservationIgnored var openWindowAction: OpenWindowAction?
 
     enum Sheet: Identifiable, Equatable {
-        case questPaste, outline(URL), courseFolders, feed, appleCalendar, openData, dashboardGallery
+        case questPaste, outline(URL), courseFolders, feed, appleCalendar, openData
         case newEvent(Date?), editEvent(String), newAssessment(String?), editAssessment(UUID), studyPrompt(String, UUID?)
         case courseEditor(UUID), inbox
 
@@ -71,7 +71,6 @@ final class Router {
             case .feed: "feed"
             case .appleCalendar: "apple"
             case .openData: "opendata"
-            case .dashboardGallery: "gallery"
             case let .newEvent(date): "new-event-\(date?.timeIntervalSince1970 ?? 0)"
             case let .editEvent(id): "event-\(id)"
             case let .newAssessment(code): "new-assessment-\(code ?? "")"
@@ -80,6 +79,14 @@ final class Router {
             case let .courseEditor(id): "course-\(id)"
             case .inbox: "inbox"
             }
+        }
+    }
+
+    /// Opens the editor for whatever an agenda row stands for.
+    func open(_ item: AgendaItem) {
+        switch item.origin {
+        case let .event(id): sheet = .editEvent(id)
+        case let .assessment(id): sheet = .editAssessment(id)
         }
     }
 

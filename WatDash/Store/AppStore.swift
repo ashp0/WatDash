@@ -166,10 +166,9 @@ final class AppStore {
         data.assessments.filter { $0.due == nil && !$0.isGraded }
     }
 
-    /// Next midterm or exam, for the countdown card.
-    func nextExam() -> AgendaItem? {
-        let window = DateInterval(start: now, duration: 150 * 86_400)
-        return agenda(in: window).first { ($0.kind == .test || $0.kind == .exam) && $0.start > now }
+    /// Late, due-in-48-hours and exam-week work, most urgent first.
+    func focus() -> [Focus.Entry] {
+        Focus.entries(from: agenda(in: Focus.window(around: now)), now: now)
     }
 
     // MARK: - Courses

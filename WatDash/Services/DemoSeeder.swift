@@ -122,7 +122,6 @@ enum DemoSeeder {
         data.assessments = list
 
         data.seatWatches = [SeatWatch(courseCode: "RUSS 101", section: "001", capacity: 40, enrolled: 40, lastChecked: now)]
-        data.settings.dashboard = DashboardWidget.defaultLayout
         return data
     }
 }

@@ -5,11 +5,18 @@
 
 import SwiftUI
 
+/// Office hours are an optional layer, off until switched on. One preference
+/// covers the Schedule and Today.
+enum OfficeHoursLayer {
+    static let key = "layers.officeHours"
+}
+
 struct ScheduleView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @AppStorage("schedule.mode") private var mode = "week"
     @AppStorage("schedule.weekends") private var showWeekends = false
+    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
     @State private var courseFilter: String?
 
     var body: some View {
@@ -25,7 +32,13 @@ struct ScheduleView: View {
                     ForEach(store.courses) { Text($0.code).tag(Optional($0.code)) }
                 }
                 .fixedSize()
-                Toggle("Weekends", isOn: $showWeekends).toggleStyle(.checkbox)
+                HStack(spacing: 14) {
+                    Toggle("Office hours", isOn: $showOfficeHours)
+                        .help("Show office hours here and on Today")
+                    Toggle("Weekends", isOn: $showWeekends)
+                }
+                .toggleStyle(.switch)
+                .controlSize(.small)
                 Picker("", selection: $mode) {
                     Text("Week").tag("week")
                     Text("Agenda").tag("agenda")
@@ -43,9 +56,9 @@ struct ScheduleView: View {
             .padding(.vertical, 12)
             Divider()
             if mode == "week" {
-                WeekGrid(weekStart: weekStart, days: showWeekends ? 7 : 5, courseFilter: courseFilter)
+                WeekGrid(weekStart: weekStart, days: showWeekends ? 7 : 5, courseFilter: courseFilter, showOfficeHours: showOfficeHours)
             } else {
-                AgendaList(start: weekStart, courseFilter: courseFilter)
+                AgendaList(start: weekStart, courseFilter: courseFilter, showOfficeHours: showOfficeHours)
             }
         }
         .navigationTitle("Schedule")
@@ -69,6 +82,7 @@ struct WeekGrid: View {
     var weekStart: Date
     var days: Int
     var courseFilter: String?
+    var showOfficeHours: Bool
 
     private let startHour = 8
     private let endHour = 22
@@ -79,7 +93,9 @@ struct WeekGrid: View {
         let calendar = Calendar.current
         let dayDates = (0..<days).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
         let window = DateInterval(start: weekStart, end: calendar.date(byAdding: .day, value: days, to: weekStart) ?? weekStart)
-        let items = store.agenda(in: window).filter { courseFilter == nil || $0.courseCode == courseFilter }
+        let items = store.agenda(in: window).filter {
+            (courseFilter == nil || $0.courseCode == courseFilter) && (showOfficeHours || $0.kind != .officeHours)
+        }
         let allDay = items.filter(\.isAllDay)
 
         VStack(spacing: 0) {
@@ -349,11 +365,14 @@ struct AgendaList: View {
     @Environment(Router.self) private var router
     var start: Date
     var courseFilter: String?
+    var showOfficeHours: Bool
 
     var body: some View {
         let calendar = Calendar.current
         let window = DateInterval(start: calendar.startOfDay(for: min(start, store.now)), duration: 28 * 86_400)
-        let items = store.agenda(in: window).filter { courseFilter == nil || $0.courseCode == courseFilter }
+        let items = store.agenda(in: window).filter {
+            (courseFilter == nil || $0.courseCode == courseFilter) && (showOfficeHours || $0.kind != .officeHours)
+        }
         let grouped = Dictionary(grouping: items) { calendar.startOfDay(for: $0.start) }
         List {
             ForEach(grouped.keys.sorted(), id: \.self) { day in

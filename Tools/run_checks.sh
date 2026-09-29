@@ -17,6 +17,7 @@ swiftc -O -o "$OUT/checks" -parse-as-library \
   WatDash/Services/RecurrenceExpander.swift \
   WatDash/Services/GradeEngine.swift \
   WatDash/Services/StudyPrompt.swift \
+  WatDash/Services/Focus.swift \
   WatDash/Importers/*.swift \
   Tests/Checks.swift
 
