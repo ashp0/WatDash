@@ -91,6 +91,19 @@ struct KindIcon: View {
     }
 }
 
+/// Opens Odyssey's assessment schedule, where every in-person quiz, midterm and
+/// final shows its room and assigned seat. `compact` is the short form for rows.
+struct SeatingButton: View {
+    var compact = false
+
+    var body: some View {
+        Link(destination: Waterloo.seatingURL) {
+            Label(compact ? "Seat" : "Seat on Odyssey", systemImage: "chair")
+        }
+        .help("Room, seat and time on Odyssey")
+    }
+}
+
 struct EmptyState: View {
     var symbol: String
     var title: String

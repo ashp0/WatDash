@@ -10,6 +10,10 @@ import Foundation
 enum Waterloo {
     static let timeZone = TimeZone(identifier: "America/Toronto") ?? .current
 
+    /// Odyssey's personal assessment schedule: every in-person quiz, midterm
+    /// and final with its room and assigned seat (posted ~3 business days before).
+    static let seatingURL = URL(string: "https://odyssey.uwaterloo.ca/teaching/schedule")!
+
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone

@@ -279,7 +279,18 @@ struct AssessmentRow: View {
         HStack {
             HStack(spacing: 6) {
                 Image(systemName: assessment.kind.symbol).foregroundStyle(Palette.color(course.colorIndex)).frame(width: 16)
-                Text(assessment.title).lineLimit(1)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(assessment.title).lineLimit(1)
+                    if assessment.kind.isSeated && !assessment.isGraded {
+                        HStack(spacing: 6) {
+                            if let location = assessment.location {
+                                Text(location).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            SeatingButton(compact: true)
+                        }
+                        .font(.caption)
+                    }
+                }
                 if assessment.componentID == nil && !course.scheme.components.isEmpty {
                     Image(systemName: "exclamationmark.circle").foregroundStyle(Palette.warn).help("Not in any component, so it doesn't count yet")
                 }

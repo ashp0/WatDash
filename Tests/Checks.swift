@@ -36,6 +36,7 @@ struct Checks {
 
     static func main() {
         courseFolder()
+        learnFolder()
         quest()
         outline()
         recurrence()
@@ -149,6 +150,84 @@ struct Checks {
         check(q.rows[2].due == date(2026, 10, 28, 16), "Quiz W5 takes the default quiz time")
         check(q.rows[1].coverage == "3.6–4.3, 5.4–5.5", "coverage uses the notes-sections column")
         check(q.pageMap.map(\.section) == ["3.1", "3.2", "3.3", "6"], "chapter page map, got \(q.pageMap.map(\.section))")
+    }
+
+    // MARK: - Marks, rooms and office hours from LEARN
+
+    static let cs145 = """
+    # CS 145: Designing Functional Programs (Advanced Version) (Fall 2026)
+
+    ## Assessments
+
+    - Assignments, 30%, best 11 of 11: due 10:00 PM on Marmoset.
+    - Midterm 1, 10%: Thu Oct 8, 7:00–8:50 PM.
+    - Midterm 2, 20%: Mon Nov 9, 7:00–8:50 PM.
+    - Final exam, 40%: date set by the Registrar.
+
+    ## Calendar
+
+    | Assessment | Date | Covers | Room | Mark |
+    |---|---|---|---|---|
+    | A1 | Wed Sep 16, 10:00 PM | Counting steps | | 100% |
+    | A2 | Wed Sep 23, 10:00 PM | Functions | | 91.67% |
+    | Midterm 1 | Thu Oct 8, 7:00–8:50 PM | A0–A3 | MC 1085, seat E-14 | |
+    | Midterm 2 | Mon Nov 9, 7:00–8:50 PM | A0–A7 | TBA | 15 / 19 (78.9%) |
+
+    ## Office hours
+
+    - Tue 11:30am–12:30pm MC 5473, Troy Vasiga, weekly until Dec 8
+    - Wed 2:30-4pm MC 4065, ISA consulting, weekly until Dec 8
+    - whenever, by appointment
+    """
+
+    static func learnFolder() {
+        let p = CourseFolderParser.parse(markdown: cs145, fallbackYear: 2026)
+        check(p.code == "CS 145", "code, got \(p.code ?? "nil")")
+        check(p.rows.count == 4, "four rows, got \(p.rows.count)")
+        guard p.rows.count == 4 else { return }
+        check(p.rows[0].score == 100 && p.rows[0].outOf == 100, "percent mark, got \(String(describing: p.rows[0].score))")
+        check(near(p.rows[1].score, 91.67) && p.rows[1].outOf == 100, "decimal percent mark")
+        check(p.rows[2].score == nil && p.rows[2].location == "MC 1085, seat E-14", "room column, got \(p.rows[2].location ?? "nil")")
+        check(p.rows[3].score == 15 && p.rows[3].outOf == 19 && p.rows[3].location == nil, "fraction mark wins over the percent; TBA room dropped")
+        check(p.rows[2].coverage == "A0–A3", "covers column still read")
+        check(CourseFolderParser.parseMark("—") == nil && CourseFolderParser.parseMark("") == nil, "blank marks are nil")
+
+        // Midterm 2 belongs to "Midterm 2", not the first component mentioning a midterm.
+        let scheme = GradeScheme(components: p.components)
+        check(scheme.guessComponent(kind: .test, title: "Midterm 2")?.name == "Midterm 2", "exact component name wins")
+        check(scheme.guessComponent(kind: .test, title: "Midterm 1")?.name == "Midterm 1", "Midterm 1 maps to itself")
+        check(scheme.guessComponent(kind: .assignment, title: "A7")?.name == "Assignments", "A7 → Assignments by keyword")
+        let engl = GradeScheme(components: [GradeComponent(name: "Skills challenges", weight: 6), GradeComponent(name: "Major assignments", weight: 75)])
+        check(engl.guessComponent(kind: .deadline, title: "Skills challenge 2: Proposal and pitch")?.name == "Skills challenges", "singular prefix of a plural component")
+
+        check(p.officeHours.count == 3, "three office-hour lines, got \(p.officeHours.count)")
+        let termStart = date(2026, 9, 8)
+        let hours = CourseFolderParser.officeHourEvents(p.officeHours, code: "CS 145", termStart: termStart, sourceID: nil)
+        check(hours.count == 2, "the dateless line is skipped, got \(hours.count)")
+        if let troy = hours.first {
+            check(troy.kind == .officeHours && troy.courseCode == "CS 145" && troy.location == "MC 5473", "OH kind, course and room")
+            check(troy.start == date(2026, 9, 8, 11, 30) && troy.end == date(2026, 9, 8, 12, 30), "first Tuesday of term, got \(troy.start)")
+            check(troy.recurrence?.weekdays == [3] && troy.recurrence?.until == date(2026, 12, 8, 23, 59), "weekly on Tuesdays until Dec 8")
+            check(troy.title.contains("Troy Vasiga"), "who, in the title: \(troy.title)")
+        }
+        let again = CourseFolderParser.officeHourEvents(p.officeHours, code: "CS 145", termStart: termStart, sourceID: nil)
+        check(hours.map(\.id) == again.map(\.id) && Set(hours.map(\.id)).count == 2, "ids are stable and distinct")
+
+        // A timetable TST slot is dropped where the course's own midterm sits;
+        // office hours stop for reading week like classes do.
+        let midterm = Assessment(courseCode: "CS 145", title: "Midterm 1", kind: .test, due: date(2026, 10, 8, 19), end: date(2026, 10, 8, 20, 50))
+        let slot = DashEvent(id: "flow:tst", title: "CS145 - TST 201", courseCode: "CS 145", kind: .test,
+                             start: date(2026, 10, 8, 19), end: date(2026, 10, 8, 20, 50))
+        let otherSlot = DashEvent(id: "flow:tst2", title: "CS145 - TST 201", courseCode: "CS 145", kind: .test,
+                                  start: date(2026, 11, 9, 19), end: date(2026, 11, 9, 20, 50))
+        let readingWeek = DashEvent(id: "noclass", title: "Reading week", kind: .holiday, start: date(2026, 10, 10), end: date(2026, 10, 19),
+                                    isAllDay: true, cancelsClasses: true)
+        let window = DateInterval(start: date(2026, 10, 1), end: date(2026, 11, 30))
+        let agenda = RecurrenceExpander.agenda(events: [slot, otherSlot, readingWeek] + hours, assessments: [midterm], in: window)
+        check(agenda.filter { $0.kind == .test }.map(\.title) == ["Midterm 1", "CS145 - TST 201"], "covered slot hidden, uncovered kept, got \(agenda.filter { $0.kind == .test }.map(\.title))")
+        let troyDays = agenda.filter { $0.kind == .officeHours && $0.location == "MC 5473" }.map { cal.component(.day, from: $0.start) }
+        check(!troyDays.contains(13), "no office hours on the reading-week Tuesday, got \(troyDays)")
+        check(troyDays.contains(6) && troyDays.contains(20), "office hours either side of reading week")
     }
 
     // MARK: - Quest paste

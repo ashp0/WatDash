@@ -89,6 +89,15 @@ struct GradeScheme: Codable, Hashable, Sendable {
     /// Best component for a new assessment of `kind` titled `title`.
     func guessComponent(kind: EventKind, title: String) -> GradeComponent? {
         let lower = title.lowercased()
+        // A component named after the item wins ("Midterm 2" → "Midterm 2", not
+        // the first component that mentions a midterm; "Skills challenge 1" →
+        // "Skills challenges"), before any keyword guess.
+        if let named = components.first(where: { $0.name.lowercased() == lower }) { return named }
+        if let named = components.first(where: { component in
+            var stem = component.name.lowercased()
+            if stem.hasSuffix("s") { stem.removeLast() }
+            return stem.count >= 4 && lower.hasPrefix(stem)
+        }) { return named }
         let keywords: [String]
         switch kind {
         case .quiz: keywords = ["quiz"]

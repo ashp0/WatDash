@@ -307,6 +307,7 @@ struct EventPopover: View {
                       systemImage: "clock")
                 if let location = item.location { Label(location, systemImage: "mappin.and.ellipse") }
                 if let detail = item.detail { Label(detail, systemImage: "text.alignleft").lineLimit(4) }
+                if item.kind.isSeated { SeatingButton() }
                 if case let .event(id) = item.origin, let event = store.event(id: id) {
                     if let recurrence = event.recurrence { Label(recurrence.summary, systemImage: "repeat") }
                     if let source = store.source(id: event.sourceID) {

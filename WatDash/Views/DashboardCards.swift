@@ -406,6 +406,9 @@ struct CountdownCard: View {
                     if let detail = exam.detail {
                         Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                     }
+                    SeatingButton()
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                 } else {
                     Text("No midterms or exams dated yet.").foregroundStyle(.secondary)
                 }

@@ -17,6 +17,12 @@ struct ParsedCourseFolder: Sendable {
         var end: Date?
         var coverage: String?
         var rawDate: String
+        /// "15/19" or "91.67%" from a Mark column: marks already posted on
+        /// LEARN, Crowdmark or the course's marks page.
+        var score: Double?
+        var outOf: Double?
+        /// Room and seat from a Room column ("MC 1085, seat E-14").
+        var location: String?
     }
 
     struct NoClassRange: Hashable, Sendable {
@@ -36,6 +42,9 @@ struct ParsedCourseFolder: Sendable {
     var studyLinks: [StudyLink] = []
     var pageMap: [NotesSection] = []
     var notesFile: String?
+    /// "## Office hours" bullets, each a quick-capture line such as
+    /// "Tue 11:30am–12:30pm MC 5473, Troy Vasiga, weekly until Dec 8".
+    var officeHours: [String] = []
     var teachDontAnswer = false
     /// Palette index from the study page's accent ("blue accent"), so the app
     /// uses the same colour as the course's study pages.
@@ -74,7 +83,7 @@ enum CourseFolderParser {
         for (heading, body) in sections where heading.lowercased().hasPrefix("assessments") {
             for line in body {
                 let clean = line.replacingOccurrences(of: "**", with: "")
-                if let bullet = clean.firstMatch(#"^\s*[-*]\s+([A-Za-z][A-Za-z /]+?),\s*(\d+(?:\.\d+)?)%(?:,\s*best\s+(\d+)\s+of\s+(\d+))?"#) {
+                if let bullet = clean.firstMatch(#"^\s*[-*]\s+([A-Za-z][A-Za-z0-9 /]+?),\s*(\d+(?:\.\d+)?)%(?:,\s*best\s+(\d+)\s+of\s+(\d+))?"#) {
                     let name = bullet[1].trimmed
                     let lower = name.lowercased()
                     var component = GradeComponent(
@@ -121,14 +130,21 @@ enum CourseFolderParser {
             if let titleColumn = header.firstIndex(where: { $0.contains("assessment") }),
                let dateColumn = header.firstIndex(where: { $0 == "date" || $0.contains("date") }) {
                 let coverageColumn = header.lastIndex(where: { $0.contains("section") || $0.contains("covers") || $0.contains("topics") })
+                let markColumn = header.firstIndex(where: { $0.contains("mark") || $0.contains("score") || $0 == "grade" })
+                let roomColumn = header.firstIndex(where: { $0.contains("room") || $0.contains("seat") || $0 == "location" || $0 == "where" })
+                func cell(_ column: Int?, _ row: [String]) -> String? {
+                    column.flatMap { $0 < row.count ? row[$0].trimmed.nilIfEmpty : nil }
+                }
                 for row in table.rows where row.count > max(titleColumn, dateColumn) {
                     let title = row[titleColumn].replacingOccurrences(of: "**", with: "").trimmed
                     guard !title.isEmpty else { continue }
                     let kind = assessmentKind(for: title)
                     let rawDate = row[dateColumn].trimmed
                     let (due, end) = parseDate(rawDate, year: year, defaultTime: defaultTimes[kind])
-                    let coverage = coverageColumn.flatMap { $0 < row.count ? row[$0].trimmed.nilIfEmpty : nil }
-                    result.rows.append(.init(title: title, kind: kind, due: due, end: end, coverage: coverage, rawDate: rawDate))
+                    let mark = cell(markColumn, row).flatMap(parseMark)
+                    let room = cell(roomColumn, row).flatMap { $0 == "TBA" || $0 == "—" ? nil : $0 }
+                    result.rows.append(.init(title: title, kind: kind, due: due, end: end, coverage: cell(coverageColumn, row),
+                                             rawDate: rawDate, score: mark?.score, outOf: mark?.outOf, location: room))
                 }
             } else if header.first.map({ $0 == "§" || $0.contains("chapter") || $0.contains("section") }) == true,
                       header.contains(where: { $0.contains("page") }) {
@@ -155,6 +171,14 @@ enum CourseFolderParser {
             }
         }
 
+        // Office hours: "- Tue 11:30am–12:30pm MC 5473, Troy Vasiga, weekly until Dec 8"
+        for (heading, body) in sections where heading.lowercased().contains("office hour") {
+            for line in body {
+                guard let bullet = line.firstMatch(#"^\s*[-*]\s+(.+)$"#) else { continue }
+                result.officeHours.append(bullet[1].replacingOccurrences(of: "**", with: "").trimmed)
+            }
+        }
+
         // "…blue accent…" / "magenta accent" → the matching palette colour.
         if let accent = markdown.lowercased().firstMatch(#"\b(blue|magenta|pink|teal|green|orange|violet|purple|red|sky|olive|brown|slate|gray|grey)\s+accent"#) {
             let map = ["blue": 0, "magenta": 1, "pink": 1, "teal": 2, "green": 2, "orange": 3, "violet": 4, "purple": 4,
@@ -171,6 +195,34 @@ enum CourseFolderParser {
             }
         }
         return result
+    }
+
+    /// "15/19", "15 / 19 (78.9%)", "91.67%", "100" → score and denominator.
+    static func parseMark(_ raw: String) -> (score: Double, outOf: Double)? {
+        if let fraction = raw.firstMatch(#"(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)"#),
+           let score = Double(fraction[1]), let outOf = Double(fraction[2]), outOf > 0 {
+            return (score, outOf)
+        }
+        if let percent = raw.firstMatch(#"^\s*(\d+(?:\.\d+)?)\s*%?\s*$"#), let score = Double(percent[1]) {
+            return (score, 100)
+        }
+        return nil
+    }
+
+    /// Weekly office-hour events from the "## Office hours" lines, read with
+    /// the quick-capture grammar. Dates resolve from `termStart`, not the
+    /// clock, so every import produces the same events and the same ids.
+    static func officeHourEvents(_ lines: [String], code: String, termStart: Date, sourceID: UUID?) -> [DashEvent] {
+        lines.compactMap { line in
+            let capture = QuickCaptureParser.parse("\(code) OH \(line)", now: termStart, knownCourses: [code])
+            guard capture.kind == .officeHours, let start = capture.start, let end = capture.end else { return nil }
+            return DashEvent(
+                id: "officehours:\(DeterministicID.digest("\(code)|\(line)"))",
+                title: capture.title, courseCode: code, kind: .officeHours,
+                start: start, end: end, location: capture.location, recurrence: capture.recurrence,
+                timeZoneID: Waterloo.timeZone.identifier, sourceID: sourceID
+            )
+        }
     }
 
     static func assessmentKind(for title: String) -> EventKind {

@@ -98,7 +98,10 @@ struct DeadlinesView: View {
                         .font(.callout.weight(.semibold).monospacedDigit())
                         .foregroundStyle(Palette.margin(percent - store.settings.targetAverage))
                 }
-                if item.kind == .quiz || item.kind == .test || item.kind == .exam {
+                if item.kind.isSeated {
+                    SeatingButton(compact: true)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     Button {
                         router.sheet = .studyPrompt(assessment.courseCode, assessment.id)
                     } label: {

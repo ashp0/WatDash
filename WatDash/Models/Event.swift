@@ -68,6 +68,9 @@ enum EventKind: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Written in person in an assigned room and seat, looked up on Odyssey.
+    var isSeated: Bool { self == .quiz || self == .test || self == .exam }
+
     /// Point-in-time items (due at 4:05 PM) rather than blocks of time.
     var isDue: Bool { self == .assignment || self == .deadline }
 

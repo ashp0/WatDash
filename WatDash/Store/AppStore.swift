@@ -361,6 +361,11 @@ final class AppStore {
                     merged.coverage = incoming.coverage ?? merged.coverage
                     merged.location = incoming.location ?? merged.location
                     if merged.componentID == nil { merged.componentID = incoming.componentID }
+                    // A posted mark fills an empty slot; one typed in the app wins.
+                    if merged.score == nil, let score = incoming.score {
+                        merged.score = score
+                        merged.outOf = incoming.outOf
+                    }
                     data.assessments[index] = merged
                 } else {
                     var fresh = incoming

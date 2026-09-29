@@ -237,7 +237,8 @@ final class ImportService {
                 Assessment(
                     courseCode: code, title: row.title, kind: row.kind,
                     componentID: course.scheme.guessComponent(kind: row.kind, title: row.title)?.id,
-                    due: row.due, end: row.end, coverage: row.coverage,
+                    due: row.due, end: row.end, coverage: row.coverage, location: row.location,
+                    score: row.score, outOf: row.outOf ?? 100,
                     sourceKey: "\(code):\(row.title)", sourceID: source.id
                 )
             }
@@ -256,6 +257,8 @@ final class ImportService {
                     .filter { chosen.contains($0.label) && $0.component != "TST" }
                     .compactMap { $0.event(sourceID: source.id, fallbackStart: store.settings.termStart, fallbackEnd: store.settings.termEnd) }
             }
+            events += CourseFolderParser.officeHourEvents(scan.parsed.officeHours, code: code,
+                                                          termStart: store.settings.termStart, sourceID: source.id)
             eventCount += events.count
             store.applyImport(sourceID: source.id, events: events, assessments: assessments)
         }
