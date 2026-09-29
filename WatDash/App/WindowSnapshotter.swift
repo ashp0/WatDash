@@ -3,7 +3,7 @@
 //  WatDash
 //
 
-#if DEBUG
+#if DEBUG && os(macOS)
 import AppKit
 import SwiftUI
 

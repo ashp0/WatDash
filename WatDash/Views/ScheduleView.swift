@@ -20,44 +20,54 @@ enum OfficeHoursLayer {
 struct ScheduleView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     @AppStorage("schedule.mode") private var mode = "week"
+    /// iPhone: a day at a time (five columns don't fit), or the agenda.
+    @AppStorage("schedule.compactMode") private var compactMode = "day"
     @AppStorage("schedule.weekends") private var showWeekends = false
     @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
     @State private var courseFilter: String?
 
     var body: some View {
-        @Bindable var router = router
-        let calendar = Calendar.current
-        let weekStart = calendar.startOfWeek(for: router.scheduleFocus)
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Text(title(weekStart)).font(.title2.weight(.semibold))
-                Spacer()
-                Picker("Course", selection: $courseFilter) {
-                    Text("All courses").tag(String?.none)
-                    ForEach(store.courses) { Text($0.code).tag(Optional($0.code)) }
+        Group {
+            if compact { compactBody } else { regularBody }
+        }
+        .navigationTitle("Schedule")
+        .inlineNavigationTitle()
+        .onChange(of: showOfficeHours) { _, _ in SnapshotWriter.write(from: store) }
+    }
+
+    private var regularBody: some View {
+        let weekStart = Calendar.current.startOfWeek(for: router.scheduleFocus)
+        return VStack(spacing: 0) {
+            // One row where it fits (the Mac); the controls drop to a second
+            // row, then split over two, as the column narrows (iPad).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    Text(title(weekStart)).font(.title2.weight(.semibold))
+                    Spacer()
+                    coursePicker.fixedSize()
+                    layerToggles
+                    modePicker
+                    navigation(by: shift)
                 }
-                .fixedSize()
-                HStack(spacing: 14) {
-                    Toggle("Office hours", isOn: $showOfficeHours)
-                        .help("Show office hours here, on Today, in the menu bar and in widgets")
-                        .onChange(of: showOfficeHours) { _, _ in SnapshotWriter.write(from: store) }
-                    Toggle("Weekends", isOn: $showWeekends)
+                VStack(alignment: .leading, spacing: 8) {
+                    heading(weekStart)
+                    HStack(spacing: 10) {
+                        coursePicker.fixedSize()
+                        layerToggles
+                        modePicker
+                    }
                 }
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                Picker("", selection: $mode) {
-                    Text("Week").tag("week")
-                    Text("Agenda").tag("agenda")
+                VStack(alignment: .leading, spacing: 8) {
+                    heading(weekStart)
+                    HStack(spacing: 10) {
+                        coursePicker.fixedSize()
+                        Spacer(minLength: 0)
+                        modePicker
+                    }
+                    layerToggles
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 150)
-                ControlGroup {
-                    Button { shift(-1) } label: { Image(systemName: "chevron.left") }
-                    Button("Today") { router.scheduleFocus = .now }
-                    Button { shift(1) } label: { Image(systemName: "chevron.right") }
-                }
-                .fixedSize()
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -68,7 +78,96 @@ struct ScheduleView: View {
                 AgendaList(start: weekStart, courseFilter: courseFilter, showOfficeHours: showOfficeHours)
             }
         }
-        .navigationTitle("Schedule")
+    }
+
+    private func heading(_ weekStart: Date) -> some View {
+        HStack {
+            Text(title(weekStart)).font(.title2.weight(.semibold))
+            Spacer()
+            navigation(by: shift)
+        }
+    }
+
+    private var layerToggles: some View {
+        HStack(spacing: 14) {
+            Toggle("Office hours", isOn: $showOfficeHours)
+                .help("Show office hours here, on Today, in the menu bar and in widgets")
+            Toggle("Weekends", isOn: $showWeekends)
+        }
+        .toggleStyle(.switch)
+        .controlSize(.small)
+        .fixedSize()  // iOS switches otherwise stretch and wrap their labels
+    }
+
+    private var modePicker: some View {
+        Picker("", selection: $mode) {
+            Text("Week").tag("week")
+            Text("Agenda").tag("agenda")
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 150)
+    }
+
+    private var coursePicker: some View {
+        Picker("Course", selection: $courseFilter) {
+            Text("All courses").tag(String?.none)
+            ForEach(store.courses) { Text($0.code).tag(Optional($0.code)) }
+        }
+    }
+
+    private func navigation(by step: @escaping (Int) -> Void) -> some View {
+        ControlGroup {
+            Button { step(-1) } label: { Image(systemName: "chevron.left") }
+            Button("Today") { router.scheduleFocus = .now }
+            Button { step(1) } label: { Image(systemName: "chevron.right") }
+        }
+        .fixedSize()
+    }
+
+    /// iPhone: one day's grid (or the agenda), with the filters in a menu.
+    private var compactBody: some View {
+        let day = Calendar.current.startOfDay(for: router.scheduleFocus)
+        return VStack(spacing: 0) {
+            HStack {
+                Text(compactMode == "day" ? day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()) : "Next four weeks")
+                    .font(.headline)
+                Spacer()
+                navigation { days in
+                    router.scheduleFocus = Calendar.current.date(byAdding: .day, value: compactMode == "day" ? days : 7 * days, to: router.scheduleFocus)
+                        ?? router.scheduleFocus
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            Divider()
+            if compactMode == "day" {
+                WeekGrid(weekStart: day, days: 1, courseFilter: courseFilter, showOfficeHours: showOfficeHours)
+            } else {
+                AgendaList(start: day, courseFilter: courseFilter, showOfficeHours: showOfficeHours)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: optionsPlacement) {
+                Menu {
+                    Picker("View", selection: $compactMode) {
+                        Label("Day", systemImage: "calendar.day.timeline.left").tag("day")
+                        Label("Agenda", systemImage: "list.bullet").tag("agenda")
+                    }
+                    coursePicker
+                    Toggle("Office hours", isOn: $showOfficeHours)
+                } label: {
+                    Label("View Options", systemImage: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+    }
+
+    private var optionsPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        .topBarLeading
+        #else
+        .automatic
+        #endif
     }
 
     private func shift(_ weeks: Int) {
@@ -364,7 +463,12 @@ struct EventPopover: View {
             .controlSize(.small)
         }
         .padding(14)
+        #if os(macOS)
         .frame(width: 320)
+        #else
+        .frame(minWidth: 280, idealWidth: 320)
+        .presentationCompactAdaptation(.popover)
+        #endif
     }
 }
 

@@ -4,8 +4,12 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
+/// The Mac's Settings window (tabs), or on iPhone and iPad a sheet with a
+/// list of the same pages.
 struct SettingsView: View {
+    #if os(macOS)
     var body: some View {
         TabView {
             GeneralSettings().tabItem { Label("General", systemImage: "gearshape") }
@@ -17,6 +21,33 @@ struct SettingsView: View {
         .frame(width: 560)
         .scenePadding()
     }
+    #else
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                page("General", "gearshape") { GeneralSettings() }
+                page("Grades", "percent") { GradeSettings() }
+                page("Calendar", "calendar") { CalendarSettings() }
+                page("Reminders", "bell") { NotificationSettings() }
+                page("Integrations", "puzzlepiece.extension") { IntegrationSettings() }
+            }
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+        }
+    }
+
+    private func page<Page: View>(_ title: String, _ symbol: String, @ViewBuilder _ content: @escaping () -> Page) -> some View {
+        NavigationLink {
+            content().navigationTitle(title)
+        } label: {
+            Label(title, systemImage: symbol)
+        }
+    }
+    #endif
 }
 
 /// Binding into one settings field, committed through the store.
@@ -34,32 +65,44 @@ private func setting<V>(_ store: AppStore, _ keyPath: WritableKeyPath<AppSetting
 
 struct GeneralSettings: View {
     @Environment(AppStore.self) private var store
+    #if os(macOS)
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
+    #endif
+    @State private var pickingFolder = false
 
     var body: some View {
         Form {
             Section("Term") {
-                TextField("Name", text: setting(store, \.termName))
-                TextField("Quest term code", text: setting(store, \.termCode))
+                LabeledField("Name") { TextField("Name", text: setting(store, \.termName)) }
+                LabeledField("Quest term code") { TextField("Quest term code", text: setting(store, \.termCode)) }
                 DatePicker("Classes start", selection: setting(store, \.termStart), displayedComponents: .date)
                 DatePicker("Exams end", selection: setting(store, \.termEnd), displayedComponents: .date)
             }
             Section("Course folders") {
                 LabeledContent("Classes folder") {
                     HStack {
-                        Text(store.settings.classesFolderPath).lineLimit(1).truncationMode(.middle)
+                        Text(ImportService.shared.classesFolderName).lineLimit(1).truncationMode(.middle)
                         Button("Choose…") {
+                            #if os(macOS)
                             let panel = NSOpenPanel()
                             panel.canChooseDirectories = true
                             panel.canChooseFiles = false
                             if panel.runModal() == .OK, let url = panel.url {
-                                setting(store, \.classesFolderPath).wrappedValue = url.path
+                                ImportService.shared.setClassesFolder(url)
                             }
+                            #else
+                            pickingFolder = true
+                            #endif
                         }
                     }
                 }
+                #if os(iOS)
+                Text("Pick the folder in Files (iCloud Drive works), or copy it into On My iPhone › WatDash.")
+                    .font(.caption).foregroundStyle(.secondary)
+                #endif
             }
             Section("App") {
+                #if os(macOS)
                 Toggle("Show in menu bar", isOn: setting(store, \.showMenuBarExtra))
                 Toggle("Quick capture shortcut ⌃⌥Space (works in any app)", isOn: Binding(
                     get: { store.settings.quickCaptureHotKey },
@@ -68,10 +111,13 @@ struct GeneralSettings: View {
                         if on { HotKey.shared.register { QuickCapturePanel.shared.toggle() } } else { HotKey.shared.unregister() }
                     }
                 ))
+                #endif
                 Toggle("Use the on-device model to read messy captures", isOn: setting(store, \.smartCapture))
                 Text(SmartCapture.availabilityNote).font(.caption).foregroundStyle(.secondary)
+                #if os(macOS)
                 Toggle("Open at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in LaunchAtLogin.set(on) }
+                #endif
                 Picker("Refresh feeds and folders", selection: setting(store, \.feedRefreshMinutes)) {
                     Text("Every 15 minutes").tag(15.0)
                     Text("Every hour").tag(60.0)
@@ -81,13 +127,21 @@ struct GeneralSettings: View {
             Section("Data") {
                 LabeledContent("Stored at", value: store.fileURL.path)
                 HStack {
+                    #if os(macOS)
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([store.fileURL]) }
+                    #endif
                     Button("Load Sample Term…") { store.replaceAll(with: DemoSeeder.sampleTerm()) }
                     Button("Erase Everything…", role: .destructive) { store.replaceAll(with: AppData()) }
                 }
+                #if os(iOS)
+                .buttonStyle(.borderless)
+                #endif
             }
         }
         .formStyle(.grouped)
+        .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { result in
+            if case let .success(url) = result { ImportService.shared.setClassesFolder(url) }
+        }
     }
 }
 
@@ -108,11 +162,11 @@ struct GradeSettings: View {
                 Toggle("Round course grades like the transcript", isOn: setting(store, \.roundCourseGrades))
             }
             Section("Earlier terms (for the cumulative average)") {
-                TextField("Units completed", value: setting(store, \.previousUnits), format: .number)
-                TextField("Cumulative average so far", value: Binding(
+                LabeledField("Units completed") { TextField("Units completed", value: setting(store, \.previousUnits), format: .number) }
+                LabeledField("Cumulative average so far") { TextField("Cumulative average so far", value: Binding(
                     get: { store.settings.previousAverage },
                     set: { setting(store, \.previousAverage).wrappedValue = $0 }
-                ), format: .number)
+                ), format: .number) }
                 Text("Leave at 0 in your first term: your cumulative average is this term's average.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -232,5 +286,26 @@ struct IntegrationSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// A form text field that keeps its label once it has a value. The Mac's
+/// grouped form labels fields itself; on iOS the label is only a
+/// placeholder, so a filled-in "1269" would lose its meaning.
+private struct LabeledField<Field: View>: View {
+    var title: String
+    @ViewBuilder var field: () -> Field
+
+    init(_ title: String, @ViewBuilder field: @escaping () -> Field) {
+        self.title = title
+        self.field = field
+    }
+
+    var body: some View {
+        #if os(iOS)
+        LabeledContent(title) { field().multilineTextAlignment(.trailing) }
+        #else
+        field()
+        #endif
     }
 }

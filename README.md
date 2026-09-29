@@ -1,6 +1,7 @@
 # WatDash
 
-A native macOS dashboard for a University of Waterloo term: every class,
+A native dashboard for a University of Waterloo term, on Mac, iPhone and
+iPad: every class,
 deadline, quiz and office hour in one place, a grade engine that tracks the
 **80% cumulative average** a sixth course needs, and study pages made by Claude
 Code from your own course folders. Almost nothing is typed by hand.
@@ -26,6 +27,26 @@ logic verified by plain `swiftc` checks.
 Plus: a **menu bar** line (below) with a panel of what's due soon and what's
 left of the day plus a capture field, **⌃⌥Space quick capture** from any app, **desktop widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
 and optional **Apple Calendar** sync.
+
+### iPhone and iPad
+
+The same app, laid out for the screen. A full-width iPad gets the Mac's
+sidebar and detail; iPhone (and an iPad window narrow enough for the phone
+layout, e.g. in Split View) gets tabs for Today, Schedule, Deadlines and
+Grades, with Study, Import, the courses and Settings under More. On a phone,
+Schedule shows a day at a time (or the agenda), the course editor's tables
+become stacked rows, and quick capture and Settings are sheets.
+
+What stays on the Mac: the menu bar line, the ⌃⌥Space hotkey, launch at
+login, Finder buttons and the widgets. Widgets read their data through an App
+Group, and on iOS a group has to be registered in a provisioning profile,
+which a free personal team can't get (the same limit WatAlarm works around).
+
+Each device keeps its own data file; nothing syncs between them yet. On iOS,
+pick the classes folder in Files (Settings → General → Classes folder, e.g.
+from iCloud Drive), or copy it into *On My iPhone › WatDash*, where it's
+found without picking. Calendar files, Quest pastes, feeds and Apple Calendar
+import work as on the Mac.
 
 ### The menu bar line
 
@@ -126,8 +147,10 @@ WatDash/
   Services/        store-facing work: imports, EventKit, notifications, hotkey,
                    smart capture, Open Data, study prompts, grade engine
   Store/           AppStore
-  Views/           SwiftUI
-WatDashWidgets/    Up Next, Deadlines, Overload Tracker, Today
+  Views/           SwiftUI, one set for every platform: `\.isCompact` (iPhone
+                   and narrow iPad windows) picks tabs and stacked rows;
+                   `#if os(macOS)` fences what only a Mac has
+WatDashWidgets/    Up Next, Deadlines, Overload Tracker, Today (macOS)
 Tests/Checks.swift assertions on parsers, recurrence, grades and study prompts
 Tools/             project generator, checks runner, icon generator, installer
 ```
@@ -160,12 +183,20 @@ Design decisions worth knowing:
 
 ## Building
 
-Requires Xcode 27 / the macOS 26+ SDK.
+Requires Xcode 27 with the macOS 26 and iOS 26 SDKs. One multiplatform target
+builds for all three.
 
 ```bash
 python3 Tools/generate_project.py   # after adding or removing files
 ./Tools/run_checks.sh               # pure-logic checks, no Xcode project needed
 ./Tools/install.sh                  # Release build → /Applications, then launches it
+```
+
+For iPhone or iPad, open `WatDash.xcodeproj` and pick a simulator or your
+device, or from the command line:
+
+```bash
+xcodebuild -project WatDash.xcodeproj -scheme WatDash -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
 ### Signing
@@ -177,6 +208,10 @@ groups need no registration on macOS), calendar access and network access.
 That means a free personal team works, and unlike an iOS build there's **no
 7-day expiry**. Use `--team` to build under a different team.
 
+iOS signs automatically with the same team and needs no entitlements (no App
+Group, since the widgets are Mac-only). A free team works on your own devices
+with Apple's 7-day profiles; the simulator needs no signing at all.
+
 ### Debug helpers
 
 ```bash
@@ -187,4 +222,8 @@ WatDash.app/Contents/MacOS/WatDash -WatDashDemo -WatDashSnapshot /tmp/shots   # 
 ```
 
 Data lives in `~/Library/Application Support/WatDash/watdash.json`, with a
-rolling daily backup next to it. API keys live in the login Keychain.
+rolling daily backup next to it (on iOS, in the app's own Application
+Support). API keys live in the Keychain. A scratch store (`-WatDashStore`)
+never touches the widgets, reminders or Apple Calendar, which it would
+otherwise share with the installed app. The same flags work on a simulator:
+`xcrun simctl launch booted com.ashwinpaudel.WatDash -WatDashDemo`.

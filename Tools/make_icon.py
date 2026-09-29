@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Draws the WatDash app icon (a timetable card on Waterloo gold) at every
-size macOS asks for. Run with any Python that has Pillow:
+size macOS asks for, plus the single full-bleed 1024 px image iOS and iPadOS
+mask themselves. Run with any Python that has Pillow:
 
     ~/.venvs/uw-classes/bin/python Tools/make_icon.py
 """
@@ -17,25 +18,36 @@ def lerp(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-def master() -> Image.Image:
+# Squircle-ish tile inset like Apple's macOS grid (824 on 1024).
+INSET = 100
+
+
+def master(full_bleed: bool = False) -> Image.Image:
+    """The macOS icon: a shadowed tile inset on a transparent canvas. With
+    `full_bleed`, the gold fills the square instead and the tile's area is
+    scaled up to the edges, because iOS applies its own mask."""
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    # Squircle-ish tile inset like Apple's grid (824 on 1024).
-    inset = 100
+    inset = INSET
     tile = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     grad = Image.new("RGBA", (S, S))
     top, bottom = (253, 190, 64), (226, 128, 10)
     for y in range(S):
-        ImageDraw.Draw(grad).line([(0, y), (S, y)], fill=lerp(top, bottom, y / S) + (255,))
-    mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([inset, inset, S - inset, S - inset], radius=185, fill=255)
-    tile.paste(grad, (0, 0), mask)
+        # Full bleed: the gradient spans the tile's area, which becomes the canvas.
+        t = (y - inset) / (S - 2 * inset) if full_bleed else y / S
+        ImageDraw.Draw(grad).line([(0, y), (S, y)], fill=lerp(top, bottom, min(1, max(0, t))) + (255,))
+    if full_bleed:
+        img.alpha_composite(grad)
+    else:
+        mask = Image.new("L", (S, S), 0)
+        ImageDraw.Draw(mask).rounded_rectangle([inset, inset, S - inset, S - inset], radius=185, fill=255)
+        tile.paste(grad, (0, 0), mask)
 
-    # Soft shadow under the tile.
-    shadow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(shadow).rounded_rectangle([inset, inset + 14, S - inset, S - inset + 14], radius=185, fill=(0, 0, 0, 90))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(18))
-    img.alpha_composite(shadow)
-    img.alpha_composite(tile)
+        # Soft shadow under the tile.
+        shadow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        ImageDraw.Draw(shadow).rounded_rectangle([inset, inset + 14, S - inset, S - inset + 14], radius=185, fill=(0, 0, 0, 90))
+        shadow = shadow.filter(ImageFilter.GaussianBlur(18))
+        img.alpha_composite(shadow)
+        img.alpha_composite(tile)
 
     d = ImageDraw.Draw(img)
     # Card.
@@ -62,6 +74,9 @@ def master() -> Image.Image:
     # Now line.
     d.rounded_rectangle([cx0 + 24, 571, cx1 - 24, 581], radius=5, fill=(229, 72, 64, 255))
     d.ellipse([cx0 + 10, 562, cx0 + 38, 590], fill=(229, 72, 64, 255))
+    if full_bleed:
+        # Opaque, as iOS requires: the tile's area stretched to the edges.
+        img = img.crop((INSET, INSET, S - INSET, S - INSET)).resize((S, S), Image.LANCZOS).convert("RGB")
     return img
 
 
@@ -75,6 +90,8 @@ def main():
             name = f"icon_{points}x{points}{'@2x' if scale == 2 else ''}.png"
             art.resize((px, px), Image.LANCZOS).save(OUT / name)
             images.append({"idiom": "mac", "scale": f"{scale}x", "size": f"{points}x{points}", "filename": name})
+    master(full_bleed=True).save(OUT / "icon_ios_1024.png")
+    images.append({"idiom": "universal", "platform": "ios", "size": "1024x1024", "filename": "icon_ios_1024.png"})
     (OUT / "Contents.json").write_text(json.dumps({"images": images, "info": {"author": "xcode", "version": 1}}, indent=2))
     art.save(ROOT / "Tools/icon-1024.png")
     print("icon written")

@@ -8,6 +8,7 @@ import SwiftUI
 struct CourseDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     var course: Course
     @State private var tab = "grades"
 
@@ -23,43 +24,55 @@ struct CourseDetailView: View {
             }
         }
         .navigationTitle(course.code)
+        .inlineNavigationTitle()
     }
 
     private var header: some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Palette.color(course.colorIndex).gradient)
-                .frame(width: 44, height: 44)
-                .overlay(Text(course.subject.prefix(2)).font(.headline).foregroundStyle(.white))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(course.code).font(.title2.weight(.bold))
-                Text([course.title, "\(course.units.formatted()) units", course.sections.isEmpty ? nil : course.sections.joined(separator: ", ")]
-                    .compactMap { $0?.nilIfEmpty }.joined(separator: " · "))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Picker("", selection: $tab) {
-                Text("Grades").tag("grades")
-                Text("Overview").tag("overview")
-                Text("Timetable").tag("timetable")
-                Text("Study").tag("study")
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 330)
-            Menu {
-                Button("Edit Course…") { router.sheet = .courseEditor(course.id) }
-                Button("New Assessment…") { router.sheet = .newAssessment(course.code) }
-                if let folder = course.folderURL {
-                    Button("Show Folder in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+        // On iPhone the tabs get their own full-width row.
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Palette.color(course.colorIndex).gradient)
+                    .frame(width: 44, height: 44)
+                    .overlay(Text(course.subject.prefix(2)).font(.headline).foregroundStyle(.white))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(course.code).font(.title2.weight(.bold))
+                    Text([course.title, "\(course.units.formatted()) units", course.sections.isEmpty ? nil : course.sections.joined(separator: ", ")]
+                        .compactMap { $0?.nilIfEmpty }.joined(separator: " · "))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(compact ? 2 : 1)
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
+                Spacer()
+                if !compact { tabPicker.frame(width: 330) }
+                Menu {
+                    Button("Edit Course…") { router.sheet = .courseEditor(course.id) }
+                    Button("New Assessment…") { router.sheet = .newAssessment(course.code) }
+                    #if os(macOS)
+                    if let folder = course.folderURL {
+                        Button("Show Folder in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+                    }
+                    #endif
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .borderlessMenuStyle()
+                .fixedSize()
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            if compact { tabPicker }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, compact ? 16 : 20)
         .padding(.vertical, 14)
+    }
+
+    private var tabPicker: some View {
+        Picker("", selection: $tab) {
+            Text("Grades").tag("grades")
+            Text("Overview").tag("overview")
+            Text("Timetable").tag("timetable")
+            Text("Study").tag("study")
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
     }
 }
 
@@ -68,6 +81,7 @@ struct CourseDetailView: View {
 struct CourseGradesEditor: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     var course: Course
 
     var body: some View {
@@ -75,17 +89,30 @@ struct CourseGradesEditor: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 if let result, result.requirement != .noScheme {
+                    let bar = VStack(alignment: .leading, spacing: 4) {
+                        GradeBar(floor: result.floor, ceiling: result.ceiling, projected: result.projected,
+                                 low: result.projectedLow, high: result.projectedHigh,
+                                 target: store.settings.targetAverage, color: Palette.color(course.colorIndex))
+                        Text(SnapshotWriter.requirementText(result.requirement)).font(.caption).foregroundStyle(.secondary)
+                    }
                     Card {
-                        HStack(spacing: 22) {
-                            stat("Current", result.current)
-                            stat("Projected", result.projected)
-                            stat("Banked", result.floor)
-                            stat("Ceiling", result.ceiling)
-                            VStack(alignment: .leading, spacing: 4) {
-                                GradeBar(floor: result.floor, ceiling: result.ceiling, projected: result.projected,
-                                         low: result.projectedLow, high: result.projectedHigh,
-                                         target: store.settings.targetAverage, color: Palette.color(course.colorIndex))
-                                Text(SnapshotWriter.requirementText(result.requirement)).font(.caption).foregroundStyle(.secondary)
+                        if compact {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 18) {
+                                    stat("Current", result.current)
+                                    stat("Projected", result.projected)
+                                    stat("Banked", result.floor)
+                                    stat("Ceiling", result.ceiling)
+                                }
+                                bar
+                            }
+                        } else {
+                            HStack(spacing: 22) {
+                                stat("Current", result.current)
+                                stat("Projected", result.projected)
+                                stat("Banked", result.floor)
+                                stat("Ceiling", result.ceiling)
+                                bar
                             }
                         }
                     }
@@ -93,7 +120,7 @@ struct CourseGradesEditor: View {
                 SchemeEditor(course: course)
                 AssessmentTable(course: course)
             }
-            .padding(20)
+            .padding(compact ? 16 : 20)
         }
     }
 
@@ -107,6 +134,7 @@ struct CourseGradesEditor: View {
 
 struct SchemeEditor: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.isCompact) private var compact
     var course: Course
 
     var body: some View {
@@ -125,15 +153,18 @@ struct SchemeEditor: View {
             }
             Card(padding: 10) {
                 VStack(spacing: 6) {
-                    HStack {
-                        Text("Component").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Weight %").frame(width: 70)
-                        Text("Items").frame(width: 60)
-                        Text("Drop lowest").frame(width: 80)
-                        Text("Exam").frame(width: 44)
-                        Color.clear.frame(width: 24)
+                    // iPhone rows label their own fields instead.
+                    if !compact {
+                        HStack {
+                            Text("Component").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Weight %").frame(width: 70)
+                            Text("Items").frame(width: 60)
+                            Text("Drop lowest").frame(width: 80)
+                            Text("Exam").frame(width: 44)
+                            Color.clear.frame(width: 24)
+                        }
+                        .font(.caption).foregroundStyle(.secondary)
                     }
-                    .font(.caption).foregroundStyle(.secondary)
                     ForEach(course.scheme.components) { component in
                         ComponentRow(course: course, component: component)
                     }
@@ -150,32 +181,80 @@ struct SchemeEditor: View {
 
 struct ComponentRow: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.isCompact) private var compact
     var course: Course
     var component: GradeComponent
 
     var body: some View {
-        HStack {
-            TextField("Name", text: bind(\.name)).textFieldStyle(.roundedBorder)
-            TextField("", value: bind(\.weight), format: .number).frame(width: 70).textFieldStyle(.roundedBorder)
-            TextField("", value: Binding(get: { component.expectedCount ?? 0 }, set: { update { $0.expectedCount = $1 > 0 ? $1 : nil }($0) }), format: .number)
-                .frame(width: 60).textFieldStyle(.roundedBorder)
-            Stepper(value: bind(\.dropLowest), in: 0...10) { Text("\(component.dropLowest)").monospacedDigit() }
-                .frame(width: 80)
-            Toggle("", isOn: bind(\.isExam)).labelsHidden().frame(width: 44)
-            Button(role: .destructive) {
-                var copy = course
-                copy.scheme.components.removeAll { $0.id == component.id }
-                copy.scheme.rules.removeAll { rule in
-                    switch rule {
-                    case let .replaceIfBetter(target, with): target == component.id || with == component.id
-                    case let .mustPass(ids, _): ids.contains(component.id)
-                    }
+        if compact {
+            // iPhone: name and delete, then the numbers, each labelled.
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    nameField
+                    deleteButton
                 }
-                store.updateCourse(copy)
-            } label: { Image(systemName: "minus.circle") }
-            .buttonStyle(.borderless)
-            .frame(width: 24)
+                HStack(spacing: 10) {
+                    labelled("Weight %") { weightField.frame(width: 60) }
+                    labelled("Items") { countField.frame(width: 50) }
+                    labelled("Drop") { dropStepper }
+                    labelled("Exam") { examToggle }
+                }
+                .font(.caption)
+            }
+            .padding(.vertical, 4)
+        } else {
+            HStack {
+                nameField
+                weightField.frame(width: 70)
+                countField.frame(width: 60)
+                dropStepper.frame(width: 80)
+                examToggle.frame(width: 44)
+                deleteButton.frame(width: 24)
+            }
         }
+    }
+
+    private var nameField: some View {
+        TextField("Name", text: bind(\.name)).textFieldStyle(.roundedBorder)
+    }
+
+    private var weightField: some View {
+        TextField("", value: bind(\.weight), format: .number).textFieldStyle(.roundedBorder)
+    }
+
+    private var countField: some View {
+        TextField("", value: Binding(get: { component.expectedCount ?? 0 }, set: { update { $0.expectedCount = $1 > 0 ? $1 : nil }($0) }), format: .number)
+            .textFieldStyle(.roundedBorder)
+    }
+
+    private var dropStepper: some View {
+        Stepper(value: bind(\.dropLowest), in: 0...10) { Text("\(component.dropLowest)").monospacedDigit() }
+    }
+
+    private var examToggle: some View {
+        Toggle("", isOn: bind(\.isExam)).labelsHidden()
+    }
+
+    private func labelled<Field: View>(_ title: String, @ViewBuilder field: () -> Field) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).foregroundStyle(.secondary)
+            field()
+        }
+    }
+
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            var copy = course
+            copy.scheme.components.removeAll { $0.id == component.id }
+            copy.scheme.rules.removeAll { rule in
+                switch rule {
+                case let .replaceIfBetter(target, with): target == component.id || with == component.id
+                case let .mustPass(ids, _): ids.contains(component.id)
+                }
+            }
+            store.updateCourse(copy)
+        } label: { Image(systemName: "minus.circle") }
+        .buttonStyle(.borderless)
     }
 
     private func update<V>(_ apply: @escaping (inout GradeComponent, V) -> Void) -> (V) -> Void {
@@ -194,6 +273,7 @@ struct ComponentRow: View {
 
 struct RulesEditor: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.isCompact) private var compact
     var course: Course
 
     var body: some View {
@@ -202,7 +282,8 @@ struct RulesEditor: View {
         let final = course.scheme.components.first { $0.name.lowercased().contains("final") }
         let hasReplace = course.scheme.rules.contains { if case .replaceIfBetter = $0 { true } else { false } }
         let hasPass = course.scheme.rules.contains { if case .mustPass = $0 { true } else { false } }
-        HStack(spacing: 18) {
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 18))
+        layout {
             if let midterm, let final {
                 Toggle("Final replaces midterm if better", isOn: Binding(
                     get: { hasReplace },
@@ -226,7 +307,7 @@ struct RulesEditor: View {
                 ))
             }
         }
-        .toggleStyle(.checkbox)
+        .checkboxToggleStyle()
         .font(.callout)
     }
 }
@@ -234,6 +315,7 @@ struct RulesEditor: View {
 struct AssessmentTable: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     var course: Course
 
     var body: some View {
@@ -247,15 +329,17 @@ struct AssessmentTable: View {
             }
             Card(padding: 10) {
                 VStack(spacing: 4) {
-                    HStack {
-                        Text("Title").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Component").frame(width: 130, alignment: .leading)
-                        Text("Date").frame(width: 110, alignment: .leading)
-                        Text("Score").frame(width: 120)
-                        Text("What-if %").frame(width: 150)
-                        Text("Excused").frame(width: 56)
+                    if !compact {
+                        HStack {
+                            Text("Title").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Component").frame(width: 130, alignment: .leading)
+                            Text("Date").frame(width: 110, alignment: .leading)
+                            Text("Score").frame(width: 120)
+                            Text("What-if %").frame(width: 150)
+                            Text("Excused").frame(width: 56)
+                        }
+                        .font(.caption).foregroundStyle(.secondary)
                     }
-                    .font(.caption).foregroundStyle(.secondary)
                     ForEach(items) { assessment in
                         AssessmentRow(course: course, assessment: assessment)
                         Divider()
@@ -272,89 +356,129 @@ struct AssessmentTable: View {
 struct AssessmentRow: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     var course: Course
     var assessment: Assessment
 
     var body: some View {
-        HStack {
-            HStack(spacing: 6) {
-                Image(systemName: assessment.kind.symbol).foregroundStyle(Palette.color(course.colorIndex)).frame(width: 16)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(assessment.title).lineLimit(1)
-                    if assessment.kind.isSeated && !assessment.isGraded {
-                        HStack(spacing: 6) {
-                            if let location = assessment.location {
-                                Text(location).foregroundStyle(.secondary).lineLimit(1)
-                            }
-                            SeatingButton(compact: true)
-                        }
-                        .font(.caption)
+        Group {
+            if compact {
+                // iPhone: what and when, then score and component, then what-if.
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        titleBlock
+                        dateText
                     }
+                    HStack {
+                        componentPicker
+                        Spacer()
+                        scoreFields
+                    }
+                    HStack(spacing: 12) {
+                        whatIf
+                        Toggle("Excused", isOn: excused).fixedSize()
+                    }
+                    .font(.caption)
                 }
-                if assessment.componentID == nil && !course.scheme.components.isEmpty {
-                    Image(systemName: "exclamationmark.circle").foregroundStyle(Palette.warn).help("Not in any component, so it doesn't count yet")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture(count: 2) { router.sheet = .editAssessment(assessment.id) }
-
-            Picker("", selection: Binding(
-                get: { assessment.componentID },
-                set: { var copy = assessment; copy.componentID = $0; store.updateAssessment(copy) }
-            )) {
-                Text("None").tag(UUID?.none)
-                ForEach(course.scheme.components) { Text($0.name).tag(Optional($0.id)) }
-            }
-            .labelsHidden()
-            .frame(width: 130)
-
-            Text(assessment.due.map { $0.formatted(.dateTime.month(.abbreviated).day()) } ?? "TBA")
-                .font(.callout).foregroundStyle(.secondary)
-                .frame(width: 110, alignment: .leading)
-
-            HStack(spacing: 2) {
-                TextField("—", value: Binding(
-                    get: { assessment.score },
-                    set: { var copy = assessment; copy.score = $0; if $0 != nil { copy.isDone = true }; store.updateAssessment(copy) }
-                ), format: .number)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 52)
-                Text("/")
-                TextField("", value: Binding(
-                    get: { assessment.outOf },
-                    set: { var copy = assessment; copy.outOf = max(0.01, $0); store.updateAssessment(copy) }
-                ), format: .number)
-                .frame(width: 44)
-            }
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 120)
-
-            HStack(spacing: 4) {
-                if assessment.isGraded {
-                    Text(assessment.percent.map { "\($0.oneDecimal)%" } ?? "").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
-                } else {
-                    Slider(value: Binding(
-                        get: { assessment.whatIf ?? 0 },
-                        set: { var copy = assessment; copy.whatIf = $0 < 1 ? nil : $0.rounded(); store.updateAssessment(copy) }
-                    ), in: 0...100)
-                    Text(assessment.whatIf.map { $0.noDecimals } ?? "auto").font(.caption.monospacedDigit()).frame(width: 30)
+                .padding(.vertical, 4)
+            } else {
+                HStack {
+                    titleBlock
+                    componentPicker.frame(width: 130)
+                    dateText.frame(width: 110, alignment: .leading)
+                    scoreFields.frame(width: 120)
+                    whatIf.frame(width: 150)
+                    Toggle("", isOn: excused).labelsHidden().frame(width: 56)
                 }
             }
-            .frame(width: 150)
-
-            Toggle("", isOn: Binding(
-                get: { assessment.isExcused },
-                set: { var copy = assessment; copy.isExcused = $0; store.updateAssessment(copy) }
-            ))
-            .labelsHidden()
-            .frame(width: 56)
         }
         .font(.callout)
         .contextMenu {
             Button("Edit…") { router.sheet = .editAssessment(assessment.id) }
             Button("Delete", role: .destructive) { store.deleteAssessment(id: assessment.id) }
         }
+    }
+
+    private var titleBlock: some View {
+        HStack(spacing: 6) {
+            Image(systemName: assessment.kind.symbol).foregroundStyle(Palette.color(course.colorIndex)).frame(width: 16)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(assessment.title).lineLimit(1)
+                if assessment.kind.isSeated && !assessment.isGraded {
+                    HStack(spacing: 6) {
+                        if let location = assessment.location {
+                            Text(location).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        SeatingButton(compact: true)
+                    }
+                    .font(.caption)
+                }
+            }
+            if assessment.componentID == nil && !course.scheme.components.isEmpty {
+                Image(systemName: "exclamationmark.circle").foregroundStyle(Palette.warn).help("Not in any component, so it doesn't count yet")
+            }
+        }
+        // The whole title column opens the editor, not just the text.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { router.sheet = .editAssessment(assessment.id) }
+    }
+
+    private var componentPicker: some View {
+        Picker("", selection: Binding(
+            get: { assessment.componentID },
+            set: { var copy = assessment; copy.componentID = $0; store.updateAssessment(copy) }
+        )) {
+            Text("None").tag(UUID?.none)
+            ForEach(course.scheme.components) { Text($0.name).tag(Optional($0.id)) }
+        }
+        .labelsHidden()
+    }
+
+    private var dateText: some View {
+        Text(assessment.due.map { $0.formatted(.dateTime.month(.abbreviated).day()) } ?? "TBA")
+            .font(.callout).foregroundStyle(.secondary)
+    }
+
+    private var scoreFields: some View {
+        HStack(spacing: 2) {
+            TextField("—", value: Binding(
+                get: { assessment.score },
+                set: { var copy = assessment; copy.score = $0; if $0 != nil { copy.isDone = true }; store.updateAssessment(copy) }
+            ), format: .number)
+            .multilineTextAlignment(.trailing)
+            .frame(width: 52)
+            Text("/")
+            TextField("", value: Binding(
+                get: { assessment.outOf },
+                set: { var copy = assessment; copy.outOf = max(0.01, $0); store.updateAssessment(copy) }
+            ), format: .number)
+            .frame(width: 44)
+        }
+        .textFieldStyle(.roundedBorder)
+    }
+
+    @ViewBuilder
+    private var whatIf: some View {
+        HStack(spacing: 4) {
+            if assessment.isGraded {
+                Text(assessment.percent.map { "\($0.oneDecimal)%" } ?? "").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+            } else {
+                if compact { Text("What-if").foregroundStyle(.secondary) }
+                Slider(value: Binding(
+                    get: { assessment.whatIf ?? 0 },
+                    set: { var copy = assessment; copy.whatIf = $0 < 1 ? nil : $0.rounded(); store.updateAssessment(copy) }
+                ), in: 0...100)
+                Text(assessment.whatIf.map { $0.noDecimals } ?? "auto").font(.caption.monospacedDigit()).frame(width: 30)
+            }
+        }
+    }
+
+    private var excused: Binding<Bool> {
+        Binding(
+            get: { assessment.isExcused },
+            set: { var copy = assessment; copy.isExcused = $0; store.updateAssessment(copy) }
+        )
     }
 }
 
@@ -364,16 +488,18 @@ struct CourseOverview: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
+    @Environment(\.isCompact) private var compact
     var course: Course
 
     var body: some View {
         let upcoming = store.upcomingDeadlines(days: 60).filter { $0.courseCode == course.code }.prefix(8)
+        let cards = compact ? AnyLayout(VStackLayout(spacing: 16)) : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
         let meetings = store.events.filter {
             $0.courseCode == course.code && $0.recurrence != nil && $0.status == .confirmed && (showOfficeHours || $0.kind != .officeHours)
         }
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top, spacing: 16) {
+                cards {
                     Card {
                         VStack(alignment: .leading, spacing: 8) {
                             CardHeader(title: "Coming up", symbol: "flag", tint: Palette.color(course.colorIndex))
@@ -404,6 +530,7 @@ struct CourseOverview: View {
                     VStack(alignment: .leading, spacing: 8) {
                         CardHeader(title: "Files", symbol: "folder", tint: Palette.color(course.colorIndex))
                         if let folder = course.folderURL {
+                            #if os(macOS)
                             Button { NSWorkspace.shared.activateFileViewerSelecting([folder]) } label: { Label(folder.path, systemImage: "folder") }
                                 .buttonStyle(.link)
                             if let notes = course.notesURL {
@@ -415,6 +542,13 @@ struct CourseOverview: View {
                                 Button { NSWorkspace.shared.open(manifest) } label: { Label("CLAUDE.md", systemImage: "doc.text") }
                                     .buttonStyle(.link)
                             }
+                            #else
+                            // Files open from the Files app on iOS; name them here.
+                            Label(folder.lastPathComponent, systemImage: "folder")
+                            if let notes = course.notesURL {
+                                Label("Course notes: \(notes.lastPathComponent)", systemImage: "doc.richtext")
+                            }
+                            #endif
                         } else {
                             Text("No course folder linked. Scan course folders to link it.").foregroundStyle(.secondary)
                         }
@@ -425,7 +559,7 @@ struct CourseOverview: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(compact ? 16 : 20)
         }
     }
 }

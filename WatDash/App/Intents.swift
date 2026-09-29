@@ -87,7 +87,7 @@ struct OpenQuickCaptureIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        QuickCapturePanel.shared.show()
+        QuickCapture.show()
         return .result()
     }
 }

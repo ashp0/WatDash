@@ -9,10 +9,12 @@ import WidgetKit
 
 /// Writes the widget snapshot and asks WidgetKit to reload. Runs after every
 /// commit (debounced) and every 15 minutes, so the "Up next" data never lags
-/// the store by more than a few seconds.
+/// the store by more than a few seconds. The widgets are Mac-only (see
+/// Tools/generate_project.py), so on iOS there's nothing to write.
 enum SnapshotWriter {
     @MainActor
     static func write(from store: AppStore) {
+        #if os(macOS)
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: store.now)
         let window = DateInterval(start: start, duration: 10 * 86_400)
@@ -48,6 +50,7 @@ enum SnapshotWriter {
         } catch {
             Log.store.error("Widget snapshot not written: \(error.localizedDescription, privacy: .public)")
         }
+        #endif
     }
 
     static func requirementText(_ requirement: GradeEngine.Requirement) -> String {

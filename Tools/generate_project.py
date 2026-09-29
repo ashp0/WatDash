@@ -24,10 +24,24 @@ app needs, because none of it requires a provisioning profile:
 So signing is manual with the "Apple Development" identity and no profile.
 Pass a different team with --team if you fork this.
 
+iOS and iPadOS
+--------------
+The app target is multiplatform (SDKROOT auto): the same sources build for
+macOS, iPhone and iPad, with `#if os(macOS)` around what only a Mac has
+(menu bar extra, hotkey, capture panel, launch at login). On iOS it has its
+own Info.plist and no entitlements, and signs automatically, so a free team
+works there too (with Apple's 7-day profiles on a device; the simulator needs
+nothing).
+
+The widget extension is macOS-only. Its data arrives through an App Group,
+and on iOS a group must be registered in a provisioning profile, which a
+personal team can't get (see WatAlarm's generator). The embed step and the
+dependency carry a macOS platform filter, so iOS builds skip it.
+
 Targets produced:
-  * WatDash         — the macOS app (not sandboxed: it reads your course folders
-                      and runs local tools)
-  * WatDashWidgets  — WidgetKit extension, embedded in Contents/PlugIns
+  * WatDash         — the app: macOS (not sandboxed: it reads your course
+                      folders and runs local tools), iOS and iPadOS
+  * WatDashWidgets  — WidgetKit extension (macOS), embedded in Contents/PlugIns
 Sources under Shared/ are compiled into BOTH targets.
 """
 
@@ -100,11 +114,12 @@ APP_RESOURCES += resource_files("WatDash/Resources")
 EXT_RESOURCES = [p for p in ["WatDashWidgets/Assets.xcassets"] if (ROOT / p).exists()]
 
 APP_PLIST = "WatDash/Info.plist"
+APP_IOS_PLIST = "WatDash/Info-iOS.plist"
 EXT_PLIST = "WatDashWidgets/Info.plist"
 APP_ENTITLEMENTS = "WatDash/WatDash.entitlements"
 EXT_ENTITLEMENTS = "WatDashWidgets/WatDashWidgets.entitlements"
 
-LOOSE_FILES = [p for p in [APP_PLIST, EXT_PLIST, APP_ENTITLEMENTS, EXT_ENTITLEMENTS] if (ROOT / p).exists()]
+LOOSE_FILES = [p for p in [APP_PLIST, APP_IOS_PLIST, EXT_PLIST, APP_ENTITLEMENTS, EXT_ENTITLEMENTS] if (ROOT / p).exists()]
 
 ALL_PATHS = sorted(set(APP_SOURCES + EXT_SOURCES + APP_RESOURCES + EXT_RESOURCES + LOOSE_FILES))
 
@@ -197,7 +212,8 @@ for mapping, phase in ((app_source_bf, "Sources"), (app_resource_bf, "Resources"
                        (ext_source_bf, "Sources"), (ext_resource_bf, "Resources")):
     for path, bid in sorted(mapping.items()):
         w(f"\t\t{bid} /* {Path(path).name} in {phase} */ = {{isa = PBXBuildFile; fileRef = {file_refs[path]} /* {Path(path).name} */; }};")
-w(f"\t\t{embed_ext_bf} /* {EXT_TARGET}.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {PRODUCT_EXT} /* {EXT_TARGET}.appex */; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};")
+# The widget is macOS-only: iOS builds of the app skip embedding it.
+w(f"\t\t{embed_ext_bf} /* {EXT_TARGET}.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {PRODUCT_EXT} /* {EXT_TARGET}.appex */; platformFilters = (macos, ); settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};")
 w("/* End PBXBuildFile section */")
 
 PROJECT_ID = oid("project", PROJECT_NAME)
@@ -397,6 +413,9 @@ w("")
 w("/* Begin PBXTargetDependency section */")
 w(f"\t\t{DEPENDENCY} /* PBXTargetDependency */ = {{")
 w("\t\t\tisa = PBXTargetDependency;")
+w("\t\t\tplatformFilters = (")
+w("\t\t\t\tmacos,")
+w("\t\t\t);")
 w(f"\t\t\ttarget = {TARGET_EXT} /* {EXT_TARGET} */;")
 w(f"\t\t\ttargetProxy = {CONTAINER_PROXY} /* PBXContainerItemProxy */;")
 w("\t\t};")
@@ -409,7 +428,14 @@ PROJECT_COMMON = {
     "ENABLE_STRICT_OBJC_MSGSEND": "YES",
     "GCC_NO_COMMON_BLOCKS": "YES",
     "MACOSX_DEPLOYMENT_TARGET": DEPLOYMENT_TARGET,
-    "SDKROOT": "macosx",
+    "IPHONEOS_DEPLOYMENT_TARGET": DEPLOYMENT_TARGET,
+    # One target for Mac, iPhone and iPad (see "iOS and iPadOS" above).
+    "SDKROOT": "auto",
+    "SUPPORTED_PLATFORMS": "\"iphoneos iphonesimulator macosx\"",
+    "TARGETED_DEVICE_FAMILY": "\"1,2\"",
+    "SUPPORTS_MACCATALYST": "NO",
+    "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
+    "SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD": "NO",
     "SWIFT_VERSION": SWIFT_VERSION,
     # Same call as WatAlarm: one @MainActor store, value types across every
     # boundary. Full strict checking would add noise without changing behaviour.
@@ -420,6 +446,9 @@ PROJECT_COMMON = {
     "CODE_SIGN_STYLE": "Manual",
     "CODE_SIGN_IDENTITY": "\"Apple Development\"",
     "PROVISIONING_PROFILE_SPECIFIER": "\"\"",
+    # A device needs a profile, which Xcode manages; the simulator signs ad hoc.
+    "\"CODE_SIGN_STYLE[sdk=iphoneos*]\"": "Automatic",
+    "\"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]\"": "\"-\"",
     "ENABLE_HARDENED_RUNTIME": "YES",
     "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "\"$(inherited)\"",
     "WATDASH_APP_GROUP": APP_GROUP,
@@ -447,14 +476,21 @@ APP_COMMON = {
     "MARKETING_VERSION": "1.0",
     "ENABLE_PREVIEWS": "YES",
     "INFOPLIST_FILE": APP_PLIST,
-    "CODE_SIGN_ENTITLEMENTS": APP_ENTITLEMENTS,
+    "\"INFOPLIST_FILE[sdk=iphoneos*]\"": APP_IOS_PLIST,
+    "\"INFOPLIST_FILE[sdk=iphonesimulator*]\"": APP_IOS_PLIST,
+    # The App Group and calendar entitlements are the Mac's; iOS needs none.
+    "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\"": APP_ENTITLEMENTS,
     "LD_RUNPATH_SEARCH_PATHS": "\"$(inherited) @executable_path/../Frameworks\"",
+    "\"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]\"": "\"$(inherited) @executable_path/Frameworks\"",
+    "\"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]\"": "\"$(inherited) @executable_path/Frameworks\"",
     "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
     "PRODUCT_NAME": "\"$(TARGET_NAME)\"",
     "COMBINE_HIDPI_IMAGES": "YES",
 }
 
 EXT_COMMON = {
+    "SDKROOT": "macosx",
+    "SUPPORTED_PLATFORMS": "macosx",
     "CURRENT_PROJECT_VERSION": "1",
     "MARKETING_VERSION": "1.0",
     "ENABLE_PREVIEWS": "YES",

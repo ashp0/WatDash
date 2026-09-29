@@ -10,6 +10,7 @@ import SwiftUI
 struct DeadlinesView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     @State private var courseFilter: String?
     @State private var showDone = false
 
@@ -51,7 +52,7 @@ struct DeadlinesView: View {
                             Text("TBA").foregroundStyle(.secondary)
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { router.sheet = .editAssessment(assessment.id) }
+                        .onTapGesture(count: tapsToOpen) { router.sheet = .editAssessment(assessment.id) }
                     }
                 }
             }
@@ -70,15 +71,42 @@ struct DeadlinesView: View {
         }
         .navigationTitle("Deadlines")
         .toolbar {
+            #if os(macOS)
             ToolbarItemGroup {
-                Picker("Course", selection: $courseFilter) {
-                    Text("All courses").tag(String?.none)
-                    ForEach(store.courses) { Text($0.code).tag(Optional($0.code)) }
-                }
+                coursePicker
                 Toggle("Show done", isOn: $showDone)
                 Button { router.sheet = .newAssessment(courseFilter) } label: { Label("New Assessment", systemImage: "plus") }
             }
+            #else
+            // The window's own + is already there; filters share one menu.
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    coursePicker
+                    Toggle("Show Done", isOn: $showDone)
+                    Button("New Assessment…", systemImage: "plus") { router.sheet = .newAssessment(courseFilter) }
+                } label: {
+                    Label("Filter", systemImage: courseFilter == nil && !showDone
+                          ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                }
+            }
+            #endif
         }
+    }
+
+    private var coursePicker: some View {
+        Picker("Course", selection: $courseFilter) {
+            Text("All courses").tag(String?.none)
+            ForEach(store.courses) { Text($0.code).tag(Optional($0.code)) }
+        }
+    }
+
+    /// Double-click on the Mac; a tap is how you open things on a touchscreen.
+    private var tapsToOpen: Int {
+        #if os(macOS)
+        2
+        #else
+        1
+        #endif
     }
 
     private func row(_ item: AgendaItem) -> some View {
@@ -98,7 +126,8 @@ struct DeadlinesView: View {
                         .font(.callout.weight(.semibold).monospacedDigit())
                         .foregroundStyle(Palette.margin(percent - store.settings.targetAverage))
                 }
-                if item.kind.isSeated {
+                // On iPhone these are in the row's long-press menu.
+                if item.kind.isSeated && !compact {
                     SeatingButton(compact: true)
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -113,15 +142,14 @@ struct DeadlinesView: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            switch item.origin {
-            case let .event(id): router.sheet = .editEvent(id)
-            case let .assessment(id): router.sheet = .editAssessment(id)
-            }
-        }
+        .onTapGesture(count: tapsToOpen) { router.open(item) }
         .contextMenu {
             if case let .assessment(id) = item.origin {
                 Button("Edit…") { router.sheet = .editAssessment(id) }
+                if item.kind.isSeated, let code = item.courseCode {
+                    Link(destination: Waterloo.seatingURL) { Label("Seat on Odyssey", systemImage: "chair") }
+                    Button("Study Prompt…", systemImage: "terminal") { router.sheet = .studyPrompt(code, id) }
+                }
                 Button("Delete", role: .destructive) { store.deleteAssessment(id: id) }
             }
         }

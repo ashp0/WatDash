@@ -10,6 +10,7 @@ import SwiftUI
 struct GradesView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     @State private var scenario: Double = 80
     @State private var scenarioOn = false
 
@@ -21,7 +22,7 @@ struct GradesView: View {
                 scenarioCard(term)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Courses").font(.title3.weight(.semibold))
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 330), spacing: 14)], spacing: 14) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: compact ? 280 : 330), spacing: 14)], spacing: 14) {
                         ForEach(store.courses) { course in
                             CourseGradeCard(course: course)
                         }
@@ -34,16 +35,19 @@ struct GradesView: View {
                 Link("CS advising FAQ", destination: URL(string: "https://cs.uwaterloo.ca/current-undergraduate-students/frequently-asked-questions")!)
                     .font(.caption)
             }
-            .padding(24)
+            .padding(compact ? 16 : 24)
         }
         .navigationTitle("Grades")
     }
 
     private func summary(_ term: GradeEngine.TermResult) -> some View {
-        Card(padding: 20) {
-            HStack(alignment: .center, spacing: 28) {
+        // Ring beside the figures, or above them on iPhone.
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                             : AnyLayout(HStackLayout(alignment: .center, spacing: 28))
+        return Card(padding: compact ? 16 : 20) {
+            layout {
                 MarginRing(value: term.projected, target: term.target, lineWidth: 12)
-                    .frame(width: 130, height: 130)
+                    .frame(width: compact ? 110 : 130, height: compact ? 110 : 130)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Projected term average").font(.headline)
                     if let margin = term.margin {
@@ -53,11 +57,13 @@ struct GradesView: View {
                     } else {
                         Text("Needs grading schemes and a few marks").font(.title3).foregroundStyle(.secondary)
                     }
-                    HStack(spacing: 18) {
-                        metric("Banked", term.floor.map { $0.oneDecimal } ?? "—", "if you scored 0 on everything left")
-                        metric("Ceiling", term.ceiling.map { $0.oneDecimal } ?? "—", "if you scored 100 on everything left")
-                        metric("Likely", term.low.flatMap { low in term.high.map { "\(low.oneDecimal)–\($0.oneDecimal)" } } ?? "—", "90% range")
-                        metric("Chance ≥ \(Int(term.target))", term.probabilityAtLeastTarget.map { "\(Int(($0 * 100).rounded()))%" } ?? "—", "rough")
+                    if compact {
+                        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
+                            GridRow { banked(term); ceiling(term) }
+                            GridRow { likely(term); chance(term) }
+                        }
+                    } else {
+                        HStack(spacing: 18) { banked(term); ceiling(term); likely(term); chance(term) }
                     }
                     Label(SnapshotWriter.requirementText(term.requiredOnRemaining) + " (a uniform score on every remaining item)", systemImage: "target")
                         .font(.callout)
@@ -75,6 +81,22 @@ struct GradesView: View {
                 Spacer()
             }
         }
+    }
+
+    private func banked(_ term: GradeEngine.TermResult) -> some View {
+        metric("Banked", term.floor.map { $0.oneDecimal } ?? "—", "if you scored 0 on everything left")
+    }
+
+    private func ceiling(_ term: GradeEngine.TermResult) -> some View {
+        metric("Ceiling", term.ceiling.map { $0.oneDecimal } ?? "—", "if you scored 100 on everything left")
+    }
+
+    private func likely(_ term: GradeEngine.TermResult) -> some View {
+        metric("Likely", term.low.flatMap { low in term.high.map { "\(low.oneDecimal)–\($0.oneDecimal)" } } ?? "—", "90% range")
+    }
+
+    private func chance(_ term: GradeEngine.TermResult) -> some View {
+        metric("Chance ≥ \(Int(term.target))", term.probabilityAtLeastTarget.map { "\(Int(($0 * 100).rounded()))%" } ?? "—", "rough")
     }
 
     private func metric(_ title: String, _ value: String, _ help: String) -> some View {
@@ -101,16 +123,28 @@ struct GradesView: View {
         let result = scenarioOn ? GradeEngine.evaluateTerm(inputs, parameters: parameters) : nil
         return Card {
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Toggle(isOn: $scenarioOn) { Text("What if I average").font(.headline) }
-                        .toggleStyle(.switch)
-                    Text("\(Int(scenario))%").font(.headline.monospacedDigit()).frame(width: 48)
-                    Text("on everything left?").font(.headline)
-                    Spacer()
+                if compact {
+                    Toggle(isOn: $scenarioOn) {
+                        Text("What if I average \(Int(scenario))% on everything left?").font(.headline)
+                    }
                     if let projected = result?.projected {
                         Text("Term average → \(projected.oneDecimal)")
                             .font(.title3.weight(.semibold))
                             .foregroundStyle(Palette.margin(projected - term.target))
+                    }
+                } else {
+                    HStack {
+                        Toggle(isOn: $scenarioOn) { Text("What if I average").font(.headline) }
+                            .toggleStyle(.switch)
+                            .fixedSize()
+                        Text("\(Int(scenario))%").font(.headline.monospacedDigit()).frame(width: 48)
+                        Text("on everything left?").font(.headline)
+                        Spacer()
+                        if let projected = result?.projected {
+                            Text("Term average → \(projected.oneDecimal)")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(Palette.margin(projected - term.target))
+                        }
                     }
                 }
                 Slider(value: $scenario, in: 40...100, step: 1)
@@ -130,16 +164,33 @@ struct GradesView: View {
                         Text("Nothing ungraded yet.").foregroundStyle(.secondary).padding(8)
                     }
                     ForEach(Array(items)) { item in
-                        HStack {
-                            CourseChip(code: item.code)
-                            Text(item.title).font(.callout.weight(.medium))
-                            Spacer()
-                            Text(item.due.map { $0.dayMonth } ?? "TBA").font(.caption).foregroundStyle(.secondary)
-                            Text("\(item.courseWeight.oneDecimal)% of course").font(.caption).frame(width: 110, alignment: .trailing)
-                            Text("+\(String(format: "%.2f", item.termImpact * 10)) avg / 10 marks")
-                                .font(.caption.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(Palette.accentDeep)
-                                .frame(width: 150, alignment: .trailing)
+                        let impact = Text("+\(String(format: "%.2f", item.termImpact * 10)) avg / 10 marks")
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(Palette.accentDeep)
+                        Group {
+                            if compact {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack {
+                                        CourseChip(code: item.code)
+                                        Text(item.title).font(.callout.weight(.medium)).lineLimit(1)
+                                    }
+                                    HStack {
+                                        Text("\(item.due.map { $0.dayMonth } ?? "TBA") · \(item.courseWeight.oneDecimal)% of course")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                        Spacer()
+                                        impact
+                                    }
+                                }
+                            } else {
+                                HStack {
+                                    CourseChip(code: item.code)
+                                    Text(item.title).font(.callout.weight(.medium))
+                                    Spacer()
+                                    Text(item.due.map { $0.dayMonth } ?? "TBA").font(.caption).foregroundStyle(.secondary)
+                                    Text("\(item.courseWeight.oneDecimal)% of course").font(.caption).frame(width: 110, alignment: .trailing)
+                                    impact.frame(width: 150, alignment: .trailing)
+                                }
+                            }
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
@@ -196,7 +247,7 @@ struct CourseGradeCard: View {
                     Text("No grading scheme yet.").foregroundStyle(.secondary)
                 }
                 Button("Open grades") { router.selection = .course(course.id) }
-                    .buttonStyle(.link)
+                    .linkButtonStyle()
                     .font(.caption)
             }
         }

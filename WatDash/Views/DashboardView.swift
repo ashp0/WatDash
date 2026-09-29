@@ -12,6 +12,7 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
 
     var body: some View {
         let focus = store.focus()
@@ -29,11 +30,12 @@ struct DashboardView: View {
                 }
             }
             .frame(maxWidth: 760, alignment: .leading)
-            .padding(24)
+            .padding(compact ? 16 : 24)
             .frame(maxWidth: .infinity)
             .animation(.snappy, value: focus)
         }
         .navigationTitle("Today")
+        .inlineNavigationTitle()
     }
 
     private var header: some View {

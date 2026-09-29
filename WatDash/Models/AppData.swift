@@ -40,6 +40,9 @@ struct AppSettings: Codable, Hashable, Sendable {
     var termStart: Date = Waterloo.calendar.date(from: DateComponents(year: 2026, month: 9, day: 8)) ?? .now
     var termEnd: Date = Waterloo.calendar.date(from: DateComponents(year: 2026, month: 12, day: 23)) ?? .now
     var classesFolderPath: String = NSString(string: "~/Documents/University of Waterloo Classes").expandingTildeInPath
+    /// iOS: the classes folder picked in Files, reopened through this
+    /// security-scoped bookmark. The Mac app isn't sandboxed and uses the path.
+    var classesFolderBookmark: Data?
 
     // Grades
     var targetAverage: Double = 80
@@ -82,6 +85,7 @@ struct AppSettings: Codable, Hashable, Sendable {
         termStart = value(.termStart, defaults.termStart)
         termEnd = value(.termEnd, defaults.termEnd)
         classesFolderPath = value(.classesFolderPath, defaults.classesFolderPath)
+        classesFolderBookmark = try? c.decode(Data.self, forKey: .classesFolderBookmark)
         targetAverage = value(.targetAverage, defaults.targetAverage)
         previousUnits = value(.previousUnits, defaults.previousUnits)
         previousAverage = try? c.decode(Double.self, forKey: .previousAverage)

@@ -128,6 +128,9 @@ final class ImportService {
     // MARK: - Course outline (outline.uwaterloo.ca saved page)
 
     func parseOutline(_ url: URL) throws -> ParsedOutline {
+        // A file picked on iOS is only readable while its scope is open.
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         let html = try String(contentsOf: url, encoding: .utf8)
         return OutlineParser.parse(html: html, year: Waterloo.calendar.component(.year, from: store.settings.termStart))
     }
@@ -167,8 +170,68 @@ final class ImportService {
         var pdfs: [String]
     }
 
+    /// Runs `body` with the classes folder readable. On the Mac that's just
+    /// its path; on iOS it's the folder picked in Files, opened through its
+    /// bookmark (anything inside it is readable while the scope is open).
+    func withClassesFolder<T>(_ body: (URL) -> T) -> T {
+        #if os(macOS)
+        return body(URL(fileURLWithPath: store.settings.classesFolderPath))
+        #else
+        var stale = false
+        guard let bookmark = store.settings.classesFolderBookmark,
+              let url = try? URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &stale) else { return body(Self.onDeviceClassesFolder) }
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        if stale, let fresh = try? url.bookmarkData() {
+            var settings = store.settings
+            settings.classesFolderBookmark = fresh
+            store.settings = settings
+        }
+        return body(url)
+        #endif
+    }
+
+    #if !os(macOS)
+    /// Without a picked folder, iOS looks in the app's own Documents (On My
+    /// iPhone › WatDash in Files). Worked out each time: the app container's
+    /// path changes when the app is reinstalled or updated, so a saved
+    /// absolute path would go stale.
+    static var onDeviceClassesFolder: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("University of Waterloo Classes", isDirectory: true)
+    }
+    #endif
+
+    /// The classes folder as Settings shows it: the path on the Mac, the
+    /// folder's name on iOS, where paths mean nothing to a person.
+    var classesFolderName: String {
+        #if os(macOS)
+        store.settings.classesFolderPath
+        #else
+        store.settings.classesFolderBookmark == nil
+            ? "On My iPhone › WatDash › \(Self.onDeviceClassesFolder.lastPathComponent)"
+            : URL(fileURLWithPath: store.settings.classesFolderPath).lastPathComponent
+        #endif
+    }
+
+    /// Remembers a classes folder chosen in a picker. On iOS the picked URL
+    /// is only good for this session, so a bookmark is kept too.
+    func setClassesFolder(_ url: URL) {
+        var settings = store.settings
+        settings.classesFolderPath = url.path
+        #if !os(macOS)
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        settings.classesFolderBookmark = try? url.bookmarkData()
+        #endif
+        store.settings = settings
+    }
+
     func scanCourseFolders(root: URL? = nil) -> [FolderScan] {
-        let rootURL = root ?? URL(fileURLWithPath: store.settings.classesFolderPath)
+        withClassesFolder { classes in scan(root ?? classes) }
+    }
+
+    private func scan(_ rootURL: URL) -> [FolderScan] {
         let fm = FileManager.default
         guard let folders = try? fm.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
             return []

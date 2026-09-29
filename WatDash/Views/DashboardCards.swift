@@ -79,6 +79,7 @@ struct FocusCard: View {
 struct FocusLead: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
     var entry: Focus.Entry
 
     var body: some View {
@@ -103,6 +104,14 @@ struct FocusLead: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
+                // iPhone: the countdown gets its own line rather than a column.
+                if compact {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        countdownText(item, inProgress: inProgress, color: color)
+                        caption(item, inProgress: inProgress)
+                    }
+                    .padding(.top, 2)
+                }
                 if item.kind.isSeated, case let .assessment(id) = item.origin, let code = item.courseCode {
                     HStack {
                         SeatingButton()
@@ -118,18 +127,30 @@ struct FocusLead: View {
                 }
             }
             Spacer(minLength: 12)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(countdown(item, inProgress: inProgress))
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(color)
-                Text(entry.urgency == .overdue ? "late" : (inProgress || item.isDue ? "left" : "to go"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if !compact {
+                VStack(alignment: .trailing, spacing: 0) {
+                    countdownText(item, inProgress: inProgress, color: color)
+                    caption(item, inProgress: inProgress)
+                }
             }
         }
         .contentShape(Rectangle())
         .onTapGesture { router.open(item) }
+    }
+
+    private func countdownText(_ item: AgendaItem, inProgress: Bool, color: Color) -> some View {
+        Text(countdown(item, inProgress: inProgress))
+            .font(.system(size: compact ? 26 : 30, weight: .bold, design: .rounded))
+            .lineLimit(1)
+            .fixedSize()
+            .monospacedDigit()
+            .foregroundStyle(color)
+    }
+
+    private func caption(_ item: AgendaItem, inProgress: Bool) -> some View {
+        Text(entry.urgency == .overdue ? "late" : (inProgress || item.isDue ? "left" : "to go"))
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 
     private func when(_ item: AgendaItem, inProgress: Bool) -> String {
@@ -334,7 +355,7 @@ struct OnboardingCard: View {
                 Button("Or explore with a sample term") {
                     store.replaceAll(with: DemoSeeder.sampleTerm())
                 }
-                .buttonStyle(.link)
+                .linkButtonStyle()
             }
         }
     }
@@ -345,12 +366,25 @@ struct OnboardingCard: View {
                 .font(.headline)
                 .frame(width: 28, height: 28)
                 .background(Palette.accent.opacity(0.2), in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(detail).font(.callout).foregroundStyle(.secondary)
+            // The button beside the text where there's room, under it on a phone.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top) {
+                    stepText(title, detail)
+                    Spacer()
+                    Button(action, action: perform)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    stepText(title, detail)
+                    Button(action, action: perform)
+                }
             }
-            Spacer()
-            Button(action, action: perform)
+        }
+    }
+
+    private func stepText(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.headline)
+            Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 }

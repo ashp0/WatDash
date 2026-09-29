@@ -3,10 +3,70 @@
 //  WatDash
 //
 
+import SwiftUI
+#if os(macOS)
 import AppKit
 import ServiceManagement
-import SwiftUI
+#endif
 
+/// Launch work both platforms share: the projections every commit runs, the
+/// refresh loop, Apple Calendar observation and the reminder permission.
+@MainActor
+enum AppLaunch {
+    /// `isolated`: a screenshot run or a scratch store, which must not reach
+    /// the widgets, reminders or calendars shared with the installed app.
+    static func start(isolated: Bool, refreshes: Bool) {
+        let store = AppStore.shared
+        if store.isDemo, store.courses.isEmpty {
+            store.replaceAll(with: DemoSeeder.sampleTerm())
+        }
+
+        // Projections: every commit (debounced) refreshes these.
+        store.effects = isolated ? [] : [
+            { SnapshotWriter.write(from: $0) },
+            { NotificationScheduler.shared.reconcile(store: $0) },
+            { CalendarSync.shared.scheduleExport($0) },
+        ]
+        store.runEffectsNow()
+
+        if (store.settings.notifyDeadlines || store.settings.notifyClasses) && !isolated {
+            Task { await NotificationScheduler.shared.requestAuthorization() }
+        }
+        CalendarSync.shared.observeChanges {
+            for source in AppStore.shared.sources where source.kind == .appleCalendar {
+                CalendarSync.shared.importEvents(source: source, into: AppStore.shared)
+            }
+        }
+
+        if refreshes {
+            ImportService.shared.startRefreshing()
+            Task { await ImportService.shared.refreshAll() }
+        }
+    }
+
+    /// Opened .ics files and watdash:// links.
+    static func open(_ url: URL) {
+        if url.isFileURL, url.pathExtension.lowercased() == "ics" {
+            do {
+                let summary = try ImportService.shared.importICSFile(url)
+                Router.shared.show("\(summary.title): \(summary.detail)")
+                Router.shared.selection = .schedule
+            } catch {
+                Router.shared.show("Couldn't import \(url.lastPathComponent): \(error.localizedDescription)")
+            }
+        } else if url.scheme == SharedConstants.urlScheme {
+            switch url.host() {
+            case "capture": QuickCapture.show()
+            case "grades": Router.shared.selection = .grades
+            case "deadlines": Router.shared.selection = .deadlines
+            case "schedule": Router.shared.selection = .schedule
+            default: Router.shared.selection = .today
+            }
+        }
+    }
+}
+
+#if os(macOS)
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var snapshotTimer: Timer?
@@ -20,17 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let snapshotRun = arguments.contains("-WatDashSnapshot")
         let isolated = snapshotRun || store.isScratch
 
-        if store.isDemo, store.courses.isEmpty {
-            store.replaceAll(with: DemoSeeder.sampleTerm())
-        }
-
-        // Projections: every commit (debounced) refreshes these.
-        store.effects = isolated ? [] : [
-            { SnapshotWriter.write(from: $0) },
-            { NotificationScheduler.shared.reconcile(store: $0) },
-            { CalendarSync.shared.scheduleExport($0) },
-        ]
-        store.runEffectsNow()
+        AppLaunch.start(isolated: isolated, refreshes: !snapshotRun)
 
         // "Up next" moves with the clock, not just with edits.
         snapshotTimer = Timer.scheduledTimer(withTimeInterval: 15 * 60, repeats: true) { _ in
@@ -39,19 +89,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if store.settings.quickCaptureHotKey && !isolated {
             HotKey.shared.register { QuickCapturePanel.shared.toggle() }
-        }
-        if (store.settings.notifyDeadlines || store.settings.notifyClasses) && !isolated {
-            Task { await NotificationScheduler.shared.requestAuthorization() }
-        }
-        CalendarSync.shared.observeChanges {
-            for source in AppStore.shared.sources where source.kind == .appleCalendar {
-                CalendarSync.shared.importEvents(source: source, into: AppStore.shared)
-            }
-        }
-
-        if !snapshotRun {
-            ImportService.shared.startRefreshing()
-            Task { await ImportService.shared.refreshAll() }
         }
 
         #if DEBUG
@@ -82,25 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Double-clicked .ics files and watdash:// links.
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls {
-            if url.isFileURL, url.pathExtension.lowercased() == "ics" {
-                do {
-                    let summary = try ImportService.shared.importICSFile(url)
-                    Router.shared.show("\(summary.title): \(summary.detail)")
-                    Router.shared.selection = .schedule
-                } catch {
-                    Router.shared.show("Couldn't import \(url.lastPathComponent): \(error.localizedDescription)")
-                }
-            } else if url.scheme == SharedConstants.urlScheme {
-                switch url.host() {
-                case "capture": QuickCapturePanel.shared.show()
-                case "grades": Router.shared.selection = .grades
-                case "deadlines": Router.shared.selection = .deadlines
-                case "schedule": Router.shared.selection = .schedule
-                default: Router.shared.selection = .today
-                }
-            }
-        }
+        for url in urls { AppLaunch.open(url) }
         Router.shared.openMainWindow()
     }
 
@@ -122,3 +141,16 @@ enum LaunchAtLogin {
         }
     }
 }
+#else
+/// iPhone and iPad. Opened files and links arrive through the scene's
+/// onOpenURL instead (see WatDashApp).
+@MainActor
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let store = AppStore.shared
+        AppLaunch.start(isolated: store.isScratch, refreshes: true)
+        Log.lifecycle.info("Launched with \(store.courses.count) courses, \(store.events.count) events")
+        return true
+    }
+}
+#endif

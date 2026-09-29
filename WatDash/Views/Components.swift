@@ -55,20 +55,31 @@ struct Notice<Actions: View>: View {
     var title: String
     var detail: String
     @ViewBuilder var actions: () -> Actions
+    @Environment(\.isCompact) private var compact
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: compact ? .top : .center, spacing: 12) {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Palette.accentDeep)
                 .frame(width: 26, height: 26)
                 .background(Palette.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.callout.weight(.semibold))
-                Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            if compact {
+                // iPhone: the full detail, with the buttons under it.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title).font(.callout.weight(.semibold))
+                    Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 12) { actions() }
+                }
+                Spacer(minLength: 0)
+            } else {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(.callout.weight(.semibold))
+                    Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                actions()
             }
-            Spacer(minLength: 8)
-            actions()
         }
         .controlSize(.small)
         .padding(.horizontal, 14)
@@ -327,5 +338,87 @@ extension View {
             Text(title).font(.title3.weight(.semibold))
             self
         }
+    }
+}
+
+// MARK: - Platform
+
+extension EnvironmentValues {
+    /// iPhone, or an iPad window narrow enough to get the iPhone layout.
+    /// Always false on the Mac, whose windows have a minimum size.
+    var isCompact: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
+}
+
+extension View {
+    /// A button drawn as a text link: the Mac's `.link`; iOS has no link
+    /// style, and a borderless button reads the same there.
+    @ViewBuilder
+    func linkButtonStyle() -> some View {
+        #if os(macOS)
+        buttonStyle(.link)
+        #else
+        buttonStyle(.borderless)
+        #endif
+    }
+
+    /// A menu without a button border (the Mac's `.borderlessButton`; iOS
+    /// menus have none to begin with).
+    @ViewBuilder
+    func borderlessMenuStyle() -> some View {
+        #if os(macOS)
+        menuStyle(.borderlessButton)
+        #else
+        self
+        #endif
+    }
+
+    /// For screens that draw their own big header: a small title in the iOS
+    /// navigation bar instead of a second large one.
+    @ViewBuilder
+    func inlineNavigationTitle() -> some View {
+        #if os(iOS)
+        toolbarTitleDisplayMode(.inline)
+        #else
+        self
+        #endif
+    }
+
+    /// Checkboxes on the Mac; switches on iOS, which has no checkbox.
+    @ViewBuilder
+    func checkboxToggleStyle() -> some View {
+        #if os(macOS)
+        toggleStyle(.checkbox)
+        #else
+        toggleStyle(.switch)
+        #endif
+    }
+}
+
+/// The clipboard and opening links, which differ per platform. Revealing
+/// files in Finder has no iOS equivalent, so those buttons are Mac-only.
+@MainActor
+enum Platform {
+    static func copy(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
+    }
+
+    /// Opens a web link, or on the Mac a local file, in its default app.
+    static func open(_ url: URL) {
+        #if os(macOS)
+        NSWorkspace.shared.open(url)
+        #else
+        UIApplication.shared.open(url)
+        #endif
     }
 }

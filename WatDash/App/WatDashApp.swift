@@ -7,12 +7,18 @@ import SwiftUI
 
 @main
 struct WatDashApp: App {
+    #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
+    #else
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
     @State private var store = AppStore.shared
     @State private var router = Router.shared
-    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
 
     var body: some Scene {
+        #if os(macOS)
         Window("WatDash", id: "main") {
             RootView()
                 .environment(store)
@@ -43,6 +49,20 @@ struct WatDashApp: App {
             MenuBarLabel(status: store.menuBarStatus(officeHours: showOfficeHours))
         }
         .menuBarExtraStyle(.window)
+        #else
+        // iPhone and iPad: one window scene (iPad can open several), with
+        // settings as a sheet and no menu bar.
+        WindowGroup {
+            RootView()
+                .environment(store)
+                .environment(router)
+                .onOpenURL { AppLaunch.open($0) }
+        }
+        .commands { WatDashCommands(store: store, router: router) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { store.saveNow() }
+        }
+        #endif
     }
 }
 
@@ -61,10 +81,19 @@ final class Router {
     /// (the menu bar label), so AppKit code can reopen the main window.
     @ObservationIgnored var openWindowAction: OpenWindowAction?
 
+    /// A file picker to show (iOS; the Mac uses open panels, see ImportActions).
+    var filePicker: FilePicker?
+
+    enum FilePicker: Equatable {
+        case calendarFiles, outline
+    }
+
     enum Sheet: Identifiable, Equatable {
         case questPaste, outline(URL), courseFolders, feed, appleCalendar, openData
         case newEvent(Date?), editEvent(String), newAssessment(String?), editAssessment(UUID), studyPrompt(String, UUID?)
         case courseEditor(UUID), inbox
+        /// iPhone and iPad only: the Mac has a capture panel and a Settings window.
+        case quickCapture, settings
 
         var id: String {
             switch self {
@@ -81,6 +110,8 @@ final class Router {
             case let .studyPrompt(code, id): "study-\(code)-\(id?.uuidString ?? "")"
             case let .courseEditor(id): "course-\(id)"
             case .inbox: "inbox"
+            case .quickCapture: "capture"
+            case .settings: "settings"
             }
         }
     }
@@ -101,13 +132,17 @@ final class Router {
         }
     }
 
+    /// Brings the main window forward. On iOS the app is its window, so
+    /// there's nothing to do.
     func openMainWindow() {
+        #if os(macOS)
         NSApp.activate()
         if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" || $0.title == "WatDash" }) {
             window.makeKeyAndOrderFront(nil)
         } else {
             openWindowAction?(id: "main")
         }
+        #endif
     }
 }
 
@@ -146,7 +181,7 @@ struct WatDashCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .newItem) {
-            Button("Quick Capture…") { QuickCapturePanel.shared.toggle() }
+            Button("Quick Capture…") { QuickCapture.toggle() }
                 .keyboardShortcut("k", modifiers: [.command])
             Button("New Event…") { router.sheet = .newEvent(nil) }
                 .keyboardShortcut("n", modifiers: [.command])

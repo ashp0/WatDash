@@ -3,28 +3,40 @@
 //  WatDash
 //
 
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 /// File pickers and drag-and-drop, shared by the toolbar, menus and tiles.
+/// The Mac runs an open panel from anywhere, even with no window open; on
+/// iOS the window shows a picker (see FilePickerHost).
 @MainActor
 enum ImportActions {
     static func pickICSFile() {
+        #if os(macOS)
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "ics") ?? .data]
         panel.allowsMultipleSelection = true
         panel.message = "Choose calendar files: Quest's “Download Schedule”, a LEARN calendar export, anything .ics."
         guard panel.runModal() == .OK else { return }
         importFiles(panel.urls)
+        #else
+        Router.shared.filePicker = .calendarFiles
+        #endif
     }
 
     static func pickOutline() {
+        #if os(macOS)
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.html]
         panel.message = "Choose a course outline saved from outline.uwaterloo.ca (File → Save As… → Web Page)."
         guard panel.runModal() == .OK, let url = panel.url else { return }
         Router.shared.sheet = .outline(url)
+        #else
+        Router.shared.filePicker = .outline
+        #endif
     }
 
     static func importFiles(_ urls: [URL]) {
@@ -59,11 +71,15 @@ struct ImportView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
 
+    @Environment(\.isCompact) private var compact
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
+                    #if os(macOS)
                     Text("Import").font(.largeTitle.weight(.bold))
+                    #endif
                     Text("Every source is remembered, so re-importing updates instead of duplicating, and removing a source removes exactly what it added.")
                         .foregroundStyle(.secondary)
                 }
@@ -100,7 +116,7 @@ struct ImportView: View {
                     }
                 }
             }
-            .padding(24)
+            .padding(compact ? 16 : 24)
         }
         .navigationTitle("Import")
     }

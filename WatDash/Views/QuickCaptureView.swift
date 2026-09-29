@@ -3,9 +3,33 @@
 //  WatDash
 //
 
-import AppKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
+/// Opens quick capture: the floating panel on the Mac, a sheet on iPhone
+/// and iPad.
+@MainActor
+enum QuickCapture {
+    static func show() {
+        #if os(macOS)
+        QuickCapturePanel.shared.show()
+        #else
+        Router.shared.sheet = .quickCapture
+        #endif
+    }
+
+    static func toggle() {
+        #if os(macOS)
+        QuickCapturePanel.shared.toggle()
+        #else
+        Router.shared.sheet = Router.shared.sheet == .quickCapture ? nil : .quickCapture
+        #endif
+    }
+}
+
+#if os(macOS)
 /// The floating capture panel (⌃⌥Space from anywhere, ⌘K in the app).
 /// Manual entry reduced to one line: type it, check the preview, press Return.
 @MainActor
@@ -59,6 +83,7 @@ private final class CapturePanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override func cancelOperation(_ sender: Any?) { orderOut(nil) }
 }
+#endif
 
 extension Notification.Name {
     static let quickCaptureShown = Notification.Name("WatDashQuickCaptureShown")
@@ -119,25 +144,39 @@ struct QuickCaptureView: View {
             }
 
             HStack {
-                Text(SmartCapture.isAvailable && store.settings.smartCapture ? "On-device model assists parsing" : "Parsed on this Mac")
+                Text(SmartCapture.isAvailable && store.settings.smartCapture ? "On-device model assists parsing" : parsedHere)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
+                #if os(macOS)
                 Text("Return to add · Esc to close")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                #endif
             }
         }
         .padding(18)
+        #if os(macOS)
         .frame(width: 620)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .onExitCommand(perform: close)
+        #else
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        #endif
         .onAppear { focused = true }
         .onReceive(NotificationCenter.default.publisher(for: .quickCaptureShown)) { _ in
             focused = true
             message = nil
         }
         .onChange(of: text) { _, newValue in reparse(newValue) }
-        .onExitCommand(perform: close)
+    }
+
+    private var parsedHere: String {
+        #if os(macOS)
+        "Parsed on this Mac"
+        #else
+        "Parsed on this device"
+        #endif
     }
 
     @ViewBuilder
@@ -179,7 +218,7 @@ struct QuickCaptureView: View {
                     .disabled(result.start == nil)
                 if result.confidence < 0.45, result.start != nil {
                     Button("Add anyway") { commit(force: true) }
-                        .buttonStyle(.link)
+                        .linkButtonStyle()
                         .font(.caption)
                 }
             }

@@ -3,21 +3,26 @@
 //  WatDash
 //
 
-import AppKit
 import SwiftUI
 import WebKit
+#if os(macOS)
+import AppKit
+#endif
 
 /// Study pages per course, and the Claude Code prompt builder for new ones.
 struct StudyView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.isCompact) private var compact
 
     var body: some View {
         let upcoming = store.upcomingDeadlines(days: 28).filter { $0.kind == .quiz || $0.kind == .test || $0.kind == .exam }
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
+                    #if os(macOS)
                     Text("Study").font(.largeTitle.weight(.bold))
+                    #endif
                     Text("Study pages are built by Claude Code on your subscription, using the quiz-prep skill in your classes folder. WatDash writes the prompt: assessment, sections, notes pages and the course's rules.")
                         .foregroundStyle(.secondary)
                 }
@@ -44,7 +49,11 @@ struct StudyView: View {
                                     Button {
                                         router.sheet = .studyPrompt(assessment.courseCode, assessment.id)
                                     } label: {
-                                        Label("Claude Code Prompt…", systemImage: "terminal")
+                                        if compact {
+                                            Image(systemName: "terminal").accessibilityLabel("Claude Code Prompt")
+                                        } else {
+                                            Label("Claude Code Prompt…", systemImage: "terminal")
+                                        }
                                     }
                                     .buttonStyle(.borderedProminent)
                                 }
@@ -55,14 +64,14 @@ struct StudyView: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Study pages").font(.title3.weight(.semibold))
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 14)], spacing: 14) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: compact ? 280 : 320), spacing: 14)], spacing: 14) {
                         ForEach(store.courses) { course in
                             StudyLinksCard(course: course)
                         }
                     }
                 }
             }
-            .padding(24)
+            .padding(compact ? 16 : 24)
         }
         .navigationTitle("Study")
     }
@@ -108,14 +117,20 @@ struct StudyLinkRow: View {
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
+            // Local builds live in the Mac's course folders; iOS can only
+            // open the web ones.
             if link.isLocalFile {
+                #if os(macOS)
                 Button("View") { showViewer = true }.controlSize(.small)
+                #endif
             }
-            Button {
-                if let url = link.resolvedURL { NSWorkspace.shared.open(url) }
-            } label: { Image(systemName: "arrow.up.right.square") }
-            .buttonStyle(.borderless)
-            .help("Open in browser")
+            if !link.isLocalFile || isMac {
+                Button {
+                    if let url = link.resolvedURL { Platform.open(url) }
+                } label: { Image(systemName: "arrow.up.right.square") }
+                .buttonStyle(.borderless)
+                .help("Open in browser")
+            }
         }
         .sheet(isPresented: $showViewer) {
             if let url = link.resolvedURL {
@@ -129,16 +144,26 @@ struct StudyLinkRow: View {
                     Divider()
                     WebPageView(url: url)
                 }
+                #if os(macOS)
                 .frame(width: 900, height: 700)
+                #endif
             }
         }
     }
+
+    private var isMac: Bool {
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }
 }
 
-struct WebPageView: NSViewRepresentable {
+struct WebPageView {
     var url: URL
 
-    func makeNSView(context: Context) -> WKWebView {
+    func makeWebView() -> WKWebView {
         let view = WKWebView()
         if url.isFileURL {
             view.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -147,9 +172,19 @@ struct WebPageView: NSViewRepresentable {
         }
         return view
     }
+}
 
+#if os(macOS)
+extension WebPageView: NSViewRepresentable {
+    func makeNSView(context: Context) -> WKWebView { makeWebView() }
     func updateNSView(_ view: WKWebView, context: Context) {}
 }
+#else
+extension WebPageView: UIViewRepresentable {
+    func makeUIView(context: Context) -> WKWebView { makeWebView() }
+    func updateUIView(_ view: WKWebView, context: Context) {}
+}
+#endif
 
 struct CourseStudyTab: View {
     @Environment(Router.self) private var router
@@ -187,6 +222,7 @@ struct StudyPromptSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isCompact) private var compact
     var courseCode: String
     var assessmentID: UUID?
 
@@ -207,7 +243,10 @@ struct StudyPromptSheet: View {
             subtitle: "Paste it into Claude Code (opened in your classes folder). It uses the quiz-prep skill and its agents, so the page gets past-paper research and every answer checked.",
             width: 820, height: 640
         ) {
-            HStack(alignment: .top, spacing: 16) {
+            // Side by side on a wide sheet; options above the prompt on iPhone.
+            let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                                 : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+            layout {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Sections").font(.headline)
                     if course.pageMap.isEmpty {
@@ -238,7 +277,7 @@ struct StudyPromptSheet: View {
                     TextField("Also…", text: $options.extraInstructions, prompt: Text("e.g. focus on ε–N proofs"), axis: .vertical)
                         .lineLimit(2...4)
                 }
-                .frame(width: 330)
+                .frame(width: compact ? nil : 330)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Prompt").font(.headline)
@@ -256,12 +295,14 @@ struct StudyPromptSheet: View {
                 }
             }
         } actions: {
+            #if os(macOS)
             Button("Show Classes Folder") {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: store.settings.classesFolderPath)])
             }
+            #endif
             Spacer()
             Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
-            Button("Copy as Terminal Command") {
+            Button(compact ? "Copy Command" : "Copy as Terminal Command") {
                 copy(prompt.terminalCommand)
                 copied = "Copied. Paste into Terminal to start Claude Code in the classes folder."
             }
@@ -284,7 +325,6 @@ struct StudyPromptSheet: View {
     }
 
     private func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+        Platform.copy(text)
     }
 }

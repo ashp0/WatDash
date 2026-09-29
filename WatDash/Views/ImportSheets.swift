@@ -4,8 +4,11 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Shared chrome for import sheets: title, explanation, content, buttons.
+/// `width` and `height` size the Mac's sheet; on iPad a sheet wider than a
+/// form becomes page-sized, and on iPhone every sheet fills the screen.
 struct SheetScaffold<Content: View, Actions: View>: View {
     var title: String
     var subtitle: String
@@ -13,6 +16,7 @@ struct SheetScaffold<Content: View, Actions: View>: View {
     var height: CGFloat? = nil
     @ViewBuilder var content: () -> Content
     @ViewBuilder var actions: () -> Actions
+    @Environment(\.isCompact) private var compact
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -23,10 +27,30 @@ struct SheetScaffold<Content: View, Actions: View>: View {
             content()
             HStack { actions() }
         }
-        .padding(22)
+        .padding(compact ? 16 : 22)
+        #if os(macOS)
         .frame(width: width, height: height)
+        #else
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .modifier(SheetSizing(wide: width > 640))
+        #endif
     }
 }
+
+#if os(iOS)
+/// iPad sheet size: page for what the Mac shows wide, form otherwise.
+private struct SheetSizing: ViewModifier {
+    var wide: Bool
+
+    func body(content: Content) -> some View {
+        if wide {
+            content.presentationSizing(.page)
+        } else {
+            content.presentationSizing(.form)
+        }
+    }
+}
+#endif
 
 // MARK: - Quest paste
 
@@ -54,13 +78,22 @@ struct QuestPasteSheet: View {
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 List(meetings) { meeting in
-                    HStack {
-                        Text(meeting.courseCode).font(.callout.weight(.semibold)).frame(width: 80, alignment: .leading)
-                        Text(meeting.label).frame(width: 70, alignment: .leading)
-                        Text(daysText(meeting.weekdays)).frame(width: 70, alignment: .leading)
-                        Text("\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))")
-                        Spacer()
-                        Text(meeting.location ?? "").foregroundStyle(.secondary)
+                    // A table row where it fits, two lines on a phone.
+                    ViewThatFits(in: .horizontal) {
+                        HStack {
+                            Text(meeting.courseCode).font(.callout.weight(.semibold)).frame(width: 80, alignment: .leading)
+                            Text(meeting.label).frame(width: 70, alignment: .leading)
+                            Text(daysText(meeting.weekdays)).frame(width: 70, alignment: .leading)
+                            Text("\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))")
+                            Spacer()
+                            Text(meeting.location ?? "").foregroundStyle(.secondary)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(meeting.courseCode) \(meeting.label)").font(.callout.weight(.semibold))
+                            Text([daysText(meeting.weekdays), "\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))", meeting.location]
+                                .compactMap { $0 }.joined(separator: " · "))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .font(.callout)
                 }
@@ -121,13 +154,21 @@ struct OutlineImportSheet: View {
                                 get: { chosen.contains(meeting.label) },
                                 set: { if $0 { chosen.insert(meeting.label) } else { chosen.remove(meeting.label) } }
                             )) {
-                                HStack {
-                                    Text(meeting.label).font(.callout.weight(.semibold)).frame(width: 70, alignment: .leading)
-                                    Text(daysText(meeting.weekdays)).frame(width: 60, alignment: .leading)
-                                    Text("\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))").frame(width: 150, alignment: .leading)
-                                    Text(meeting.location ?? "").foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text(meeting.instructor ?? "").foregroundStyle(.secondary).lineLimit(1)
+                                ViewThatFits(in: .horizontal) {
+                                    HStack {
+                                        Text(meeting.label).font(.callout.weight(.semibold)).frame(width: 70, alignment: .leading)
+                                        Text(daysText(meeting.weekdays)).frame(width: 60, alignment: .leading)
+                                        Text("\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))").frame(width: 150, alignment: .leading)
+                                        Text(meeting.location ?? "").foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(meeting.instructor ?? "").foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(meeting.label).font(.callout.weight(.semibold))
+                                        Text([daysText(meeting.weekdays), "\(timeText(meeting.startMinutes))–\(timeText(meeting.endMinutes))", meeting.location]
+                                            .compactMap { $0 }.joined(separator: " · "))
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 .font(.callout)
                             }
@@ -188,6 +229,7 @@ struct CourseFolderSheet: View {
     @State private var included: Set<String> = []
     @State private var sections: [String: Set<String>] = [:]
     @State private var includeSelfStudy = false
+    @State private var pickingFolder = false
 
     var body: some View {
         SheetScaffold(
@@ -197,19 +239,21 @@ struct CourseFolderSheet: View {
         ) {
             HStack {
                 Image(systemName: "folder")
-                Text(store.settings.classesFolderPath).lineLimit(1).truncationMode(.middle)
+                Text(ImportService.shared.classesFolderName).lineLimit(1).truncationMode(.middle)
                 Spacer()
                 Button("Change…") {
+                    #if os(macOS)
                     let panel = NSOpenPanel()
                     panel.canChooseDirectories = true
                     panel.canChooseFiles = false
                     panel.directoryURL = URL(fileURLWithPath: store.settings.classesFolderPath)
                     if panel.runModal() == .OK, let url = panel.url {
-                        var settings = store.settings
-                        settings.classesFolderPath = url.path
-                        store.settings = settings
+                        ImportService.shared.setClassesFolder(url)
                         rescan()
                     }
+                    #else
+                    pickingFolder = true
+                    #endif
                 }
             }
             .font(.callout)
@@ -245,6 +289,11 @@ struct CourseFolderSheet: View {
             .disabled(included.isEmpty)
         }
         .onAppear(perform: rescan)
+        .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { result in
+            guard case let .success(url) = result else { return }
+            ImportService.shared.setClassesFolder(url)
+            rescan()
+        }
     }
 
     private func rescan() {
@@ -272,12 +321,9 @@ struct CourseFolderSheet: View {
                     if parsed.teachDontAnswer { Text("teach, don't answer").font(.caption2).padding(.horizontal, 5).background(Palette.accent.opacity(0.2), in: Capsule()) }
                 }
             }
-            HStack(spacing: 14) {
-                stat("\(parsed.rows.filter { $0.due != nil }.count)/\(parsed.rows.count)", "dated assessments")
-                stat(parsed.components.isEmpty ? (scan.outline?.assessments.isEmpty == false ? "outline" : "—") : "\(parsed.components.count)", "scheme parts")
-                stat("\(parsed.pageMap.count)", "notes sections")
-                stat("\(parsed.studyLinks.count + scan.localStudyPages.count)", "study pages")
-                if !parsed.noClassRanges.isEmpty { stat("\(parsed.noClassRanges.count)", "no-class ranges") }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) { stats(scan) }
+                VStack(alignment: .leading, spacing: 2) { stats(scan) }
             }
             .padding(.leading, 20)
             if let outline = scan.outline, let code = parsed.code {
@@ -301,7 +347,7 @@ struct CourseFolderSheet: View {
                             ))
                         }
                     }
-                    .menuStyle(.borderlessButton)
+                    .borderlessMenuStyle()
                     .fixedSize()
                     .font(.caption)
                     Text("adds class times from the saved outline").font(.caption2).foregroundStyle(.tertiary)
@@ -310,6 +356,16 @@ struct CourseFolderSheet: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func stats(_ scan: ImportService.FolderScan) -> some View {
+        let parsed = scan.parsed
+        stat("\(parsed.rows.filter { $0.due != nil }.count)/\(parsed.rows.count)", "dated assessments")
+        stat(parsed.components.isEmpty ? (scan.outline?.assessments.isEmpty == false ? "outline" : "—") : "\(parsed.components.count)", "scheme parts")
+        stat("\(parsed.pageMap.count)", "notes sections")
+        stat("\(parsed.studyLinks.count + scan.localStudyPages.count)", "study pages")
+        if !parsed.noClassRanges.isEmpty { stat("\(parsed.noClassRanges.count)", "no-class ranges") }
     }
 
     private func stat(_ value: String, _ label: String) -> some View {
@@ -472,10 +528,9 @@ struct OpenDataSheet: View {
 
                     Divider()
                     Text("Import").font(.headline)
-                    HStack {
-                        Button("Class times for my sections") { run("classes") { try await ImportService.shared.importOpenDataClasses() } }
-                        Button("Important dates") { run("dates") { try await ImportService.shared.importImportantDates() } }
-                        Button("Final exams") { run("exams") { try await ImportService.shared.importExams() } }
+                    ViewThatFits(in: .horizontal) {
+                        HStack { importButtons }
+                        VStack(alignment: .leading, spacing: 8) { importButtons }
                     }
                     Text("Class times need each course's sections (e.g. LEC 005, TUT 104): they come from a Quest import, or set them under Edit Course.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -534,6 +589,13 @@ struct OpenDataSheet: View {
             Spacer()
             Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
         }
+    }
+
+    @ViewBuilder
+    private var importButtons: some View {
+        Button("Class times for my sections") { run("classes") { try await ImportService.shared.importOpenDataClasses() } }
+        Button("Important dates") { run("dates") { try await ImportService.shared.importImportantDates() } }
+        Button("Final exams") { run("exams") { try await ImportService.shared.importExams() } }
     }
 
     private func run(_ label: String, _ work: @escaping () async throws -> ImportService.Summary) {

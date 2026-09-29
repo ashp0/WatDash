@@ -3,7 +3,7 @@
 //  WatDash
 //
 
-import AppKit
+import CoreGraphics
 import EventKit
 import Foundation
 
@@ -63,12 +63,13 @@ final class CalendarSync {
         return store.calendars(for: .event)
             .filter { !ours.contains($0.title) }
             .map { calendar in
-                let color = calendar.color?.usingColorSpace(.sRGB)
+                let sRGB = CGColorSpace(name: CGColorSpace.sRGB).flatMap { calendar.cgColor?.converted(to: $0, intent: .defaultIntent, options: nil) }
+                let rgb = sRGB?.components.flatMap { $0.count >= 3 ? $0.prefix(3).map(Double.init) : nil } ?? [0.5, 0.5, 0.5]
                 return CalendarChoice(
                     id: calendar.calendarIdentifier,
                     title: calendar.title,
                     sourceTitle: calendar.source?.title ?? "",
-                    colorComponents: [Double(color?.redComponent ?? 0.5), Double(color?.greenComponent ?? 0.5), Double(color?.blueComponent ?? 0.5)]
+                    colorComponents: rgb
                 )
             }
             .sorted { ($0.sourceTitle, $0.title) < ($1.sourceTitle, $1.title) }
@@ -209,7 +210,7 @@ final class CalendarSync {
             ?? store.defaultCalendarForNewEvents?.source
             ?? sources.first { $0.sourceType == .local }
         let rgb = Palette.courses[colorIndex]
-        calendar.color = NSColor(srgbRed: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
+        calendar.cgColor = CGColor(srgbRed: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
         try store.saveCalendar(calendar, commit: true)
         var settings = appStore.settings
         settings.exportedCalendarIDs[key] = calendar.calendarIdentifier

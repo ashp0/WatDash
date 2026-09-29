@@ -65,7 +65,7 @@
 		1C2EBD47C70B13EC2061051F /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D21C66F545DD0749E12B2F /* WidgetSnapshot.swift */; };
 		5873B25C266B1027152C5E54 /* WatDashWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37191C661FA2C3A302BAD55C /* WatDashWidgets.swift */; };
 		335E21D532669469A1F88E13 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F6E55004C7A7483326EEB38 /* Assets.xcassets */; };
-		B08425DBD2F801FF813D56F4 /* WatDashWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B08425DBD2F801FF813D56F4 /* WatDashWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +111,7 @@
 		8C58532EBF3885D99793D5BD /* ICSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ICSParser.swift"; sourceTree = "<group>"; };
 		0F5D87EA222C9B199BDAC9A0 /* QuickCaptureParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "QuickCaptureParser.swift"; sourceTree = "<group>"; };
 		74E03782D50A053D7B2E6DCD /* ScheduleParsers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ScheduleParsers.swift"; sourceTree = "<group>"; };
+		76251666682A9881D1F4F82E /* Info-iOS.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-iOS.plist"; sourceTree = "<group>"; };
 		992A0BE642F6B881413BFD7B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
 		6453971BBB0AB8A85FFA2C65 /* AppData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppData.swift"; sourceTree = "<group>"; };
 		BBE1863E3649AD346605A2AF /* Assessment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Assessment.swift"; sourceTree = "<group>"; };
@@ -205,6 +206,7 @@
 				0A0D764986F222C82A5B7D1C /* Store */,
 				E5A5FFC6081081F026CD1D38 /* Views */,
 				4DFEC3D04430DA28CA4723B6 /* Assets.xcassets */,
+				76251666682A9881D1F4F82E /* Info-iOS.plist */,
 				992A0BE642F6B881413BFD7B /* Info.plist */,
 				83DA37F0D3150D69838CC79A /* WatDash.entitlements */,
 			);
@@ -500,6 +502,9 @@
 /* Begin PBXTargetDependency section */
 		8EB2258A1A52E212681E1E09 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
 			target = DCFC1CA985A12CB426067EF9 /* WatDashWidgets */;
 			targetProxy = 56EC49B5CA93B1C6AACF4825 /* PBXContainerItemProxy */;
 		};
@@ -509,6 +514,8 @@
 		3EA9552834DE5C47DC8707B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
+				"CODE_SIGN_STYLE[sdk=iphoneos*]" = Automatic;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -523,14 +530,20 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SDKROOT = macosx;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WATDASH_APP_GROUP = 3AML23Y649.com.ashwinpaudel.WatDash;
 			};
 			name = Debug;
@@ -538,9 +551,13 @@
 		8D2AF3A2389AB24543178325 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = WatDash/WatDash.entitlements;
+				"INFOPLIST_FILE[sdk=iphoneos*]" = WatDash/Info-iOS.plist;
+				"INFOPLIST_FILE[sdk=iphonesimulator*]" = WatDash/Info-iOS.plist;
+				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) @executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) @executable_path/Frameworks";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = WatDash/WatDash.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -563,13 +580,17 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash.Widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Debug;
 		};
 		8221362659F971D1D455E4FA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
+				"CODE_SIGN_STYLE[sdk=iphoneos*]" = Automatic;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -583,13 +604,19 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SDKROOT = macosx;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WATDASH_APP_GROUP = 3AML23Y649.com.ashwinpaudel.WatDash;
 			};
 			name = Release;
@@ -597,9 +624,13 @@
 		A141A18632EA094E41A6E83C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = WatDash/WatDash.entitlements;
+				"INFOPLIST_FILE[sdk=iphoneos*]" = WatDash/Info-iOS.plist;
+				"INFOPLIST_FILE[sdk=iphonesimulator*]" = WatDash/Info-iOS.plist;
+				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) @executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) @executable_path/Frameworks";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = WatDash/WatDash.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -622,7 +653,9 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash.Widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Release;
 		};

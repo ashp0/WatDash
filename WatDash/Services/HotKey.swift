@@ -3,6 +3,7 @@
 //  WatDash
 //
 
+#if os(macOS)
 import AppKit
 import Carbon.HIToolbox
 
@@ -40,3 +41,4 @@ final class HotKey {
         handler = nil
     }
 }
+#endif
