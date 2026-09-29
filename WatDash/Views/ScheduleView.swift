@@ -84,8 +84,6 @@ struct WeekGrid: View {
     var courseFilter: String?
     var showOfficeHours: Bool
 
-    private let startHour = 8
-    private let endHour = 22
     private let hourHeight: CGFloat = 54
     private let gutter: CGFloat = 52
 
@@ -97,6 +95,9 @@ struct WeekGrid: View {
             (courseFilter == nil || $0.courseCode == courseFilter) && (showOfficeHours || $0.kind != .officeHours)
         }
         let allDay = items.filter(\.isAllDay)
+        let hours = TimeGrid.hours(for: items, calendar: calendar)
+        let startHour = hours.lowerBound
+        let endHour = hours.upperBound
 
         VStack(spacing: 0) {
             // Day headers + all-day strip.
@@ -182,6 +183,7 @@ struct DayColumn: View {
         let calendar = Calendar.current
         let dayStart = calendar.date(bySettingHour: startHour, minute: 0, second: 0, of: day) ?? day
         let layout = Self.columns(for: items)
+        let gridHeight = CGFloat(endHour - startHour) * hourHeight
         GeometryReader { proxy in
             let width = proxy.size.width
             ZStack(alignment: .topLeading) {
@@ -201,11 +203,12 @@ struct DayColumn: View {
                     let slot = layout[item.id] ?? (0, 1)
                     let top = max(0, CGFloat(item.start.timeIntervalSince(dayStart) / 3600) * hourHeight)
                     let rawHeight = CGFloat(item.end.timeIntervalSince(item.start) / 3600) * hourHeight
-                    let height = item.isDue ? 22 : max(20, rawHeight)
+                    let height = item.isDue ? 22 : max(20, min(rawHeight, gridHeight - top))
                     let columnWidth = (width - 6) / CGFloat(slot.1)
                     EventBlock(item: item, compact: height < 40)
                         .frame(width: columnWidth - 2, height: height)
-                        .offset(x: 3 + CGFloat(slot.0) * columnWidth, y: top)
+                        // Past the last hour (an 11:59 PM deadline), sit flush with the bottom.
+                        .offset(x: 3 + CGFloat(slot.0) * columnWidth, y: min(top, gridHeight - height))
                         .onTapGesture { selected = item }
                         .popover(isPresented: Binding(get: { selected?.id == item.id }, set: { if !$0 { selected = nil } }), arrowEdge: .trailing) {
                             EventPopover(item: item) { selected = nil }
@@ -214,7 +217,7 @@ struct DayColumn: View {
 
                 if calendar.isDateInToday(day) {
                     let y = CGFloat(store.now.timeIntervalSince(dayStart) / 3600) * hourHeight
-                    if y >= 0 && y <= CGFloat(endHour - startHour) * hourHeight {
+                    if y >= 0 && y <= gridHeight {
                         HStack(spacing: 0) {
                             Circle().fill(Palette.bad).frame(width: 8, height: 8)
                             Rectangle().fill(Palette.bad).frame(height: 1.5)
@@ -231,7 +234,7 @@ struct DayColumn: View {
                 router.sheet = .newEvent(start)
             }
         }
-        .frame(height: CGFloat(endHour - startHour) * hourHeight)
+        .frame(height: gridHeight)
         .frame(maxWidth: .infinity)
     }
 
@@ -251,7 +254,7 @@ struct DayColumn: View {
         }
 
         for item in sorted {
-            let end = item.isDue ? item.start.addingTimeInterval(25 * 60) : item.end
+            let end = item.isDue ? item.start.addingTimeInterval(TimeGrid.dueFootprint) : item.end
             if item.start >= clusterEnd { flush() }
             if let free = columnEnds.firstIndex(where: { $0 <= item.start }) {
                 columnEnds[free] = end

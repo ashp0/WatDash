@@ -45,6 +45,7 @@ struct Checks {
         ics()
         studyPrompt()
         focus()
+        timeGrid()
         realFolders()
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -527,6 +528,25 @@ struct Checks {
         check(entries.map(\.urgency) == [.overdue, .within24h, .within24h, .within48h, .examThisWeek], "focus urgencies")
         check(Focus.window(around: now).contains(date(2026, 9, 27, 13)) && Focus.window(around: now).contains(date(2026, 10, 6, 11)),
               "focus window spans the late grace and the exam week")
+    }
+
+    // MARK: - Week grid hours
+
+    static func timeGrid() {
+        func item(_ title: String, _ kind: EventKind, _ start: Date, end: Date? = nil, allDay: Bool = false) -> AgendaItem {
+            AgendaItem(id: title, origin: .assessment(UUID()), title: title, courseCode: "CS 145", kind: kind,
+                       start: start, end: end ?? start, isAllDay: allDay)
+        }
+        let lecture = item("Lecture", .lecture, date(2026, 9, 30, 10), end: date(2026, 9, 30, 11, 20))
+        check(TimeGrid.hours(for: [lecture], calendar: cal) == 8..<22, "a daytime week keeps 8 AM–10 PM")
+        check(TimeGrid.hours(for: [lecture, item("A3", .assignment, date(2026, 9, 30, 22))], calendar: cal) == 8..<23,
+              "a 10 PM deadline widens the grid past 10 PM")
+        check(TimeGrid.hours(for: [item("Essay", .assignment, date(2026, 10, 8, 23, 59))], calendar: cal) == 8..<24,
+              "an 11:59 PM deadline runs the grid to midnight")
+        check(TimeGrid.hours(for: [item("Early", .tutorial, date(2026, 10, 1, 7, 30), end: date(2026, 10, 1, 8, 20))], calendar: cal) == 7..<22,
+              "a 7:30 AM class opens the grid at 7")
+        check(TimeGrid.hours(for: [item("Holiday", .holiday, date(2026, 10, 12), end: date(2026, 10, 13), allDay: true)], calendar: cal) == 8..<22,
+              "all-day items leave the hours alone")
     }
 
     // MARK: - Real course folders (smoke test, informational)
