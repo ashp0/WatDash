@@ -18,6 +18,8 @@ swiftc -O -o "$OUT/checks" -parse-as-library \
   WatDash/Services/GradeEngine.swift \
   WatDash/Services/StudyPrompt.swift \
   WatDash/Services/Focus.swift \
+  WatDash/Services/Urgency.swift \
+  WatDash/Services/MenuBarStatus.swift \
   WatDash/Services/TimeGrid.swift \
   WatDash/Importers/*.swift \
   Tests/Checks.swift

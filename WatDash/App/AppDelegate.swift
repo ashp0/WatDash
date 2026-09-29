@@ -14,15 +14,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let store = AppStore.shared
         let arguments = ProcessInfo.processInfo.arguments
-        // Screenshot runs must not pop permission prompts or grab the hotkey.
+        // Screenshot runs must not pop permission prompts or grab the hotkey,
+        // and a scratch store must not reach the widgets, reminders or
+        // calendars it shares with the installed app.
         let snapshotRun = arguments.contains("-WatDashSnapshot")
+        let isolated = snapshotRun || store.isScratch
 
         if store.isDemo, store.courses.isEmpty {
             store.replaceAll(with: DemoSeeder.sampleTerm())
         }
 
         // Projections: every commit (debounced) refreshes these.
-        store.effects = snapshotRun ? [] : [
+        store.effects = isolated ? [] : [
             { SnapshotWriter.write(from: $0) },
             { NotificationScheduler.shared.reconcile(store: $0) },
             { CalendarSync.shared.scheduleExport($0) },
@@ -34,10 +37,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in SnapshotWriter.write(from: AppStore.shared) }
         }
 
-        if store.settings.quickCaptureHotKey && !snapshotRun {
+        if store.settings.quickCaptureHotKey && !isolated {
             HotKey.shared.register { QuickCapturePanel.shared.toggle() }
         }
-        if (store.settings.notifyDeadlines || store.settings.notifyClasses) && !snapshotRun {
+        if (store.settings.notifyDeadlines || store.settings.notifyClasses) && !isolated {
             Task { await NotificationScheduler.shared.requestAuthorization() }
         }
         CalendarSync.shared.observeChanges {

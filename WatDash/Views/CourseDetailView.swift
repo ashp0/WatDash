@@ -363,11 +363,14 @@ struct AssessmentRow: View {
 struct CourseOverview: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
+    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
     var course: Course
 
     var body: some View {
         let upcoming = store.upcomingDeadlines(days: 60).filter { $0.courseCode == course.code }.prefix(8)
-        let meetings = store.events.filter { $0.courseCode == course.code && $0.recurrence != nil && $0.status == .confirmed }
+        let meetings = store.events.filter {
+            $0.courseCode == course.code && $0.recurrence != nil && $0.status == .confirmed && (showOfficeHours || $0.kind != .officeHours)
+        }
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top, spacing: 16) {
@@ -429,11 +432,12 @@ struct CourseOverview: View {
 
 struct CourseTimetable: View {
     @Environment(AppStore.self) private var store
+    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
     var course: Course
 
     var body: some View {
         let window = DateInterval(start: store.settings.termStart, end: store.settings.termEnd.addingTimeInterval(86_400))
-        let items = store.agenda(in: window).filter { $0.courseCode == course.code }
+        let items = store.agenda(in: window).filter { $0.courseCode == course.code && (showOfficeHours || $0.kind != .officeHours) }
         List {
             ForEach(items) { item in
                 AgendaRow(item: item, showDate: true)

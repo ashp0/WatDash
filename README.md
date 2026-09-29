@@ -16,16 +16,35 @@ logic verified by plain `swiftc` checks.
 | Screen | What it does |
 |---|---|
 | **Today** | Answers "what should I be working on right now?" A **Focus** card leads with the most urgent item (overdue up to 48 hours, due in the next 48 hours, or a midterm or exam this week) and its countdown, then the rest of that list with done checkboxes. Below it, **Rest of today** lists only the classes still ahead. One-line notices appear only when the setup is unfinished or captures are waiting. No grades here: they're on Grades and in the sidebar. |
-| **Schedule** | Week grid with a live "now" line, overlap-aware columns, click-to-inspect popovers ("skip this one" for a cancelled lecture), double-click to add. Agenda mode for the next four weeks. Office hours are an optional layer behind a switch (off by default; the same switch covers Today). |
+| **Schedule** | Week grid with a live "now" line, overlap-aware columns, click-to-inspect popovers ("skip this one" for a cancelled lecture), double-click to add. Agenda mode for the next four weeks. Office hours are an optional layer behind a switch (off by default; the same switch covers Today, the menu bar, widgets, course pages and Siri). |
 | **Deadlines** | Overdue / this week / next week / later / TBA, with done checkboxes, marks, and on every quiz, midterm and exam a **Seat** button (your room and seat on Odyssey) and a study-prompt button. |
 | **Grades** | Projected term average with a likely range, chance of clearing the target, the uniform score needed on everything left, a what-if slider, and per-item leverage ("+0.60 on your average per 10 marks"). |
 | **Course** | Grading-scheme editor (weights, item counts, drop-lowest, exam flags, "final replaces midterm", "must pass the exams"), score table with per-item what-if sliders and exemptions, meetings, files, notes page map. |
 | **Study** | Builds a ready-to-paste **Claude Code prompt** for a study page: assessment, sections, notes page ranges, course rules. No API key: Claude Code runs it on your subscription using the `quiz-prep` skill in the classes folder. |
 | **Import** | Eight import tiles plus a list of every source with health, refresh and remove. |
 
-Plus: a **menu bar** panel (now/next, rest of today, due this week, a capture
-field), **⌃⌥Space quick capture** from any app, **desktop widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
+Plus: a **menu bar** line (below) with a panel of what's due soon and what's
+left of the day plus a capture field, **⌃⌥Space quick capture** from any app, **desktop widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
 and optional **Apple Calendar** sync.
+
+### The menu bar line
+
+One line, recomputed every minute and on wake, in this order:
+
+1. **The class you're in**, or a quiz you're writing: `ENGL 119 · 25m left`.
+2. **A class starting within 30 minutes**: `ECON 101 in 12m`.
+3. **The most urgent work**, when something is pressing: `CS 145 A4 · 3h 20m`, or `· late`.
+   Urgency is *what it's worth × the work it needs ÷ the hours left*: its
+   share of the course grade (from the grading scheme), a rough effort by kind
+   (exam 12 h, midterm 8 h, assignment 4 h, quiz 2 h) and the time to the
+   deadline. It counts as pressing at 0.25, which is about four and a half
+   days before a 30% midterm, half a day before a typical assignment and a
+   few hours before a small quiz. Late work (up to 48 hours) always counts.
+4. **Otherwise the next assignment due**: `CS 145 A4 · Fri`.
+5. Nothing in three weeks: just the icon.
+
+The logic is pure (`Services/Urgency.swift`, `Services/MenuBarStatus.swift`)
+and checked in `Tests/Checks.swift`.
 
 ## Getting your term in
 
@@ -122,6 +141,12 @@ Design decisions worth knowing:
 - **Deterministic ids everywhere** (as in WatAlarm). Exported Calendar events
   carry `watdash://occurrence/<digest>` of what they are; reconciliation is a
   set difference; WatDash only ever touches events it created.
+- **The clock ticks on the minute.** `AppStore.now` moves at each minute
+  boundary, where every class starts and ends, from a one-shot timer that is
+  rescheduled from the wall clock each time (a timer's deadline doesn't
+  advance while the Mac sleeps), and again on wake and on clock or time-zone
+  changes. The menu bar label is computed in the App's scene body, so the
+  scene itself depends on the clock.
 - **Writes that change nothing are dropped.** Observation fires on every
   write, and SwiftUI bindings (the menu bar's `isInserted`, toggles) re-set
   identical values; without the guard in `AppStore.settings` that loops.

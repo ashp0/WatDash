@@ -16,7 +16,7 @@ enum SnapshotWriter {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: store.now)
         let window = DateInterval(start: start, duration: 10 * 86_400)
-        let items = store.agenda(in: window).filter { !$0.isDone }.prefix(120).map { item in
+        let items = store.agenda(in: window).filter { !$0.isDone && OfficeHoursLayer.shows($0.kind) }.prefix(120).map { item in
             WidgetSnapshot.Item(
                 id: item.id, title: item.title, courseCode: item.courseCode,
                 colorIndex: store.colorIndex(for: item.courseCode),

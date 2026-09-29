@@ -6,9 +6,15 @@
 import SwiftUI
 
 /// Office hours are an optional layer, off until switched on. One preference
-/// covers the Schedule and Today.
+/// covers everywhere they could appear: Schedule, Today, the menu bar, the
+/// widgets, course pages and Siri.
 enum OfficeHoursLayer {
     static let key = "layers.officeHours"
+
+    /// The saved switch, for code that isn't a view.
+    static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+
+    static func shows(_ kind: EventKind) -> Bool { isOn || kind != .officeHours }
 }
 
 struct ScheduleView: View {
@@ -34,7 +40,8 @@ struct ScheduleView: View {
                 .fixedSize()
                 HStack(spacing: 14) {
                     Toggle("Office hours", isOn: $showOfficeHours)
-                        .help("Show office hours here and on Today")
+                        .help("Show office hours here, on Today, in the menu bar and in widgets")
+                        .onChange(of: showOfficeHours) { _, _ in SnapshotWriter.write(from: store) }
                     Toggle("Weekends", isOn: $showWeekends)
                 }
                 .toggleStyle(.switch)

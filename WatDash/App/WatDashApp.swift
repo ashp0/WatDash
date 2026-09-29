@@ -10,6 +10,7 @@ struct WatDashApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = AppStore.shared
     @State private var router = Router.shared
+    @AppStorage(OfficeHoursLayer.key) private var showOfficeHours = false
 
     var body: some Scene {
         Window("WatDash", id: "main") {
@@ -36,8 +37,10 @@ struct WatDashApp: App {
                 .environment(store)
                 .environment(router)
         } label: {
-            MenuBarLabel()
-                .environment(store)
+            // Read here, in the scene body, so the scene itself depends on
+            // the clock and the agenda and rebuilds the label when either
+            // moves (see MenuBarLabel).
+            MenuBarLabel(status: store.menuBarStatus(officeHours: showOfficeHours))
         }
         .menuBarExtraStyle(.window)
     }

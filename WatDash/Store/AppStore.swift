@@ -32,21 +32,26 @@ final class AppStore {
     }
 
     private(set) var data: AppData
-    /// Ticks every 30 seconds so countdowns and "now" markers stay live.
+    /// Moves on every minute boundary (see `scheduleTick`), so countdowns,
+    /// "now" markers and the menu bar stay live.
     private(set) var now: Date = .now
     private(set) var term: GradeEngine.TermResult
     private(set) var lastSaveError: String?
 
     let isDemo: Bool
+    /// A debug run against a scratch data file (-WatDashStore name).
+    let isScratch: Bool
     let fileURL: URL
 
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var effectsTask: Task<Void, Never>?
     @ObservationIgnored private var clock: Timer?
+    @ObservationIgnored private var clockObservers: [NSObjectProtocol] = []
     @ObservationIgnored var effects: [(AppStore) -> Void] = []
 
     init(demo: Bool, fileName: String? = nil) {
         isDemo = demo
+        isScratch = fileName != nil
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("WatDash", isDirectory: true)
         try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
@@ -69,13 +74,54 @@ final class AppStore {
         term = GradeEngine.evaluateTerm([], parameters: .init())
         recomputeGrades()
 
-        clock = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
-        }
+        scheduleTick()
+        observeClockChanges()
     }
 
-    private func tick() {
+    // MARK: - Clock
+
+    /// Re-reads the clock and schedules the next tick. Also called when the
+    /// Mac wakes, the clock or time zone changes, or the app comes forward.
+    func tick() {
         now = .now
+        scheduleTick()
+    }
+
+    /// One-shot timer for the next minute boundary, rescheduled from the wall
+    /// clock every time. Classes start and end on whole minutes, so the menu
+    /// bar flips at the boundary instead of up to a tick late, and a timer
+    /// that drifted over sleep (its deadline doesn't advance while the Mac
+    /// sleeps) is corrected on the next tick. Common run-loop modes keep it
+    /// firing while a menu is open or a list is being scrolled.
+    private func scheduleTick() {
+        clock?.invalidate()
+        let next = Calendar.current.nextDate(after: .now, matching: DateComponents(second: 0), matchingPolicy: .nextTime)
+            ?? Date.now.addingTimeInterval(60)
+        let timer = Timer(fire: next, interval: 0, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        clock = timer
+    }
+
+    private func observeClockChanges() {
+        var names: [(NotificationCenter, Notification.Name)] = [
+            (.default, .NSSystemClockDidChange),
+            (.default, .NSSystemTimeZoneDidChange),
+            (.default, .NSCalendarDayChanged),
+        ]
+        #if os(macOS)
+        names.append((NSWorkspace.shared.notificationCenter, NSWorkspace.didWakeNotification))
+        #else
+        names.append((.default, UIApplication.significantTimeChangeNotification))
+        names.append((.default, UIApplication.willEnterForegroundNotification))
+        #endif
+        clockObservers = names.map { center, name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.tick() }
+            }
+        }
     }
 
     // MARK: - Convenience accessors
@@ -148,7 +194,7 @@ final class AppStore {
     /// Class currently in session and the next thing on the timetable.
     func nowAndNext() -> (current: AgendaItem?, next: AgendaItem?) {
         let window = DateInterval(start: now.addingTimeInterval(-6 * 3600), duration: 8 * 86_400)
-        let items = agenda(in: window).filter { !$0.isAllDay }
+        let items = agenda(in: window).filter { !$0.isAllDay && OfficeHoursLayer.shows($0.kind) }
         let current = items.first { !$0.isDue && $0.contains(now) }
         let next = items.first { $0.start > now }
         return (current, next)
@@ -169,6 +215,19 @@ final class AppStore {
     /// Late, due-in-48-hours and exam-week work, most urgent first.
     func focus() -> [Focus.Entry] {
         Focus.entries(from: agenda(in: Focus.window(around: now)), now: now)
+    }
+
+    /// The menu bar's line: the class you're in or about to be in, else the
+    /// most urgent work, else the next thing due.
+    func menuBarStatus(officeHours: Bool) -> MenuBarStatus.Status {
+        MenuBarStatus.resolve(agenda(in: MenuBarStatus.window(around: now)), weights: assessmentWeights, now: now,
+                              officeHours: officeHours)
+    }
+
+    /// Each ungraded assessment's share of its course grade, from the grade
+    /// engine (drop-lowest and expected counts already applied).
+    var assessmentWeights: [UUID: Double] {
+        Dictionary(term.leverage.map { ($0.id, $0.courseWeight) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: - Courses

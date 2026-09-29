@@ -45,6 +45,8 @@ struct Checks {
         ics()
         studyPrompt()
         focus()
+        urgency()
+        menuBar()
         timeGrid()
         realFolders()
         print("\(passes) passed, \(failures) failed")
@@ -528,6 +530,114 @@ struct Checks {
         check(entries.map(\.urgency) == [.overdue, .within24h, .within24h, .within48h, .examThisWeek], "focus urgencies")
         check(Focus.window(around: now).contains(date(2026, 9, 27, 13)) && Focus.window(around: now).contains(date(2026, 10, 6, 11)),
               "focus window spans the late grace and the exam week")
+    }
+
+    // MARK: - Urgency
+
+    static func urgency() {
+        let now = date(2026, 9, 29, 12)
+        func work(_ title: String, _ kind: EventKind, _ start: Date, end: Date? = nil, done: Bool = false) -> AgendaItem {
+            AgendaItem(id: title, origin: .assessment(UUID()), title: title, courseCode: "CS 145", kind: kind,
+                       start: start, end: end ?? start, isAllDay: false, isDone: done)
+        }
+        let quiz = work("Quiz tomorrow", .quiz, date(2026, 9, 30, 10), end: date(2026, 9, 30, 10, 50))
+        let midterm = work("Midterm in 3 days", .test, date(2026, 10, 2, 12), end: date(2026, 10, 2, 14))
+        let assignment = work("Due in 2 hours", .assignment, date(2026, 9, 29, 14))
+        func weight(_ item: AgendaItem, _ value: Double) -> (UUID, Double)? {
+            if case let .assessment(id) = item.origin { return (id, value) }
+            return nil
+        }
+        let weights = Dictionary(uniqueKeysWithValues: [weight(quiz, 2), weight(midterm, 30), weight(assignment, 3)].compactMap { $0 })
+        let ranked = Urgency.ranked([quiz, midterm, assignment], weights: weights, now: now)
+        check(ranked.map(\.item.title) == ["Due in 2 hours", "Midterm in 3 days", "Quiz tomorrow"],
+              "deadline proximity, then weight × effort, got \(ranked.map(\.item.title))")
+        check(ranked[1].score >= Urgency.critical && ranked[2].score < Urgency.critical,
+              "a 30% midterm three days out is pressing; a 2% quiz tomorrow isn't, got \(ranked.map(\.score))")
+
+        let heavy = work("Worth 20%", .quiz, date(2026, 9, 30, 12)), light = work("Worth 2%", .quiz, date(2026, 9, 30, 12))
+        let byWeight = Dictionary(uniqueKeysWithValues: [weight(heavy, 20), weight(light, 2)].compactMap { $0 })
+        check(Urgency.ranked([light, heavy], weights: byWeight, now: now).first?.item.title == "Worth 20%", "same time: the heavier item first")
+
+        let late = work("Late", .assignment, date(2026, 9, 29, 9))
+        let stale = work("Stale", .assignment, date(2026, 9, 26, 9))
+        let written = work("Written quiz", .quiz, date(2026, 9, 29, 9), end: date(2026, 9, 29, 10))
+        let writing = work("Quiz now", .quiz, date(2026, 9, 29, 11, 30), end: date(2026, 9, 29, 12, 30))
+        let done = work("Done", .assignment, date(2026, 9, 29, 13), done: true)
+        let lateRanked = Urgency.ranked([late, stale, written, writing, done, quiz], weights: [:], now: now)
+        check(lateRanked.map(\.item.title) == ["Late", "Quiz tomorrow"],
+              "late work leads; stale, written, in-progress and done items drop out, got \(lateRanked.map(\.item.title))")
+        check(lateRanked.first?.isOverdue == true && (lateRanked.first?.score ?? 0) >= Urgency.critical, "late work is always pressing")
+    }
+
+    // MARK: - Menu bar
+
+    static func menuBar() {
+        // Tuesday Sep 29, the real timetable: CS 145 10:00, ECON 101 11:30, ENGL 119 2:30.
+        func lecture(_ code: String, _ start: Date, _ end: Date) -> AgendaItem {
+            AgendaItem(id: "\(code)@\(start)", origin: .event(code), title: "\(code.replacingOccurrences(of: " ", with: "")) - LEC 001",
+                       courseCode: code, kind: .lecture, start: start, end: end, isAllDay: false)
+        }
+        func work(_ code: String, _ title: String, _ kind: EventKind, _ start: Date, end: Date? = nil, done: Bool = false) -> AgendaItem {
+            AgendaItem(id: "\(code) \(title)", origin: .assessment(UUID()), title: title, courseCode: code, kind: kind,
+                       start: start, end: end ?? start, isAllDay: false, isDone: done)
+        }
+        let cs = lecture("CS 145", date(2026, 9, 29, 10), date(2026, 9, 29, 11, 20))
+        let econ = lecture("ECON 101", date(2026, 9, 29, 11, 30), date(2026, 9, 29, 12, 50))
+        let engl = lecture("ENGL 119", date(2026, 9, 29, 14, 30), date(2026, 9, 29, 15, 50))
+        let a4 = work("CS 145", "A4", .assignment, date(2026, 9, 30, 22))
+        let midterm = work("CS 145", "Midterm 1", .test, date(2026, 10, 8, 19), end: date(2026, 10, 8, 20, 50))
+        var weights: [UUID: Double] = [:]
+        for (item, weight) in [(a4, 30.0 / 11), (midterm, 10)] { if case let .assessment(id) = item.origin { weights[id] = weight } }
+        let agenda = [cs, econ, engl, a4, midterm]
+        func status(_ h: Int, _ m: Int, day: Int = 29, _ items: [AgendaItem]? = nil) -> MenuBarStatus.Status {
+            MenuBarStatus.resolve(items ?? agenda, weights: weights, now: date(2026, 9, day, h, m), calendar: cal)
+        }
+
+        var s = status(14, 45)
+        check(s.reason == .inClass && s.item == engl && s.text == "ENGL 119 · 1h 5m left",
+              "during English it's English, not ECON, got \(s.text)")
+        s = status(11, 25)
+        check(s.reason == .startingSoon && s.item == econ && s.text == "ECON 101 in 5m", "ECON five minutes out, got \(s.text)")
+        s = status(11, 30)
+        check(s.reason == .inClass && s.item == econ, "flips to ECON on the minute it starts, got \(s.text)")
+        s = status(13, 0)
+        check(s.reason == .nextDue && s.item == a4 && s.text == "CS 145 A4 · Tomorrow",
+              "idle with nothing pressing: the next assignment, got \(s.reason) \(s.text)")
+        s = status(18, 0, day: 30)
+        check(s.reason == .urgent && s.item == a4 && s.text == "CS 145 A4 · 4h", "A4 due in four hours is pressing, got \(s.text)")
+        s = status(9, 0, day: 30)  // A4 is 13 hours out, below the bar
+        check(s.reason == .nextDue && s.item == a4, "13 hours out, A4 is just next due, got \(s.reason)")
+
+        let late = MenuBarStatus.resolve(agenda, weights: weights, now: date(2026, 10, 1, 9), calendar: cal)
+        check(late.reason == .urgent && late.text == "CS 145 A4 · late" && late.symbol == "exclamationmark.triangle",
+              "missed A4 shows as late, got \(late.text)")
+        let doneA4 = work("CS 145", "A4", .assignment, date(2026, 9, 30, 22), done: true)
+        s = MenuBarStatus.resolve([cs, econ, engl, doneA4, midterm], weights: weights, now: date(2026, 9, 29, 13), calendar: cal)
+        check(s.item == midterm && s.reason == .nextDue, "done work is skipped; with no assignment left, the next assessment, got \(s.text)")
+
+        let quiz = work("MATH 137", "Quiz 3", .quiz, date(2026, 9, 29, 17, 30), end: date(2026, 9, 29, 18, 20))
+        s = status(17, 45, [quiz, a4])
+        check(s.reason == .inClass && s.text == "MATH 137 Quiz 3 · 35m left", "writing a quiz counts as being in class, got \(s.text)")
+        s = status(11, 0, [quiz, a4])
+        check(s.reason == .nextDue && s.item == a4, "a quiz later today isn't \"due\": the next assignment is, got \(s.text)")
+        s = status(16, 0, [quiz, a4])
+        check(s.reason == .urgent && s.item == quiz, "the same quiz 90 minutes out is pressing, got \(s.text)")
+
+        s = status(12, 0, [])
+        check(s.reason == .clear && s.text.isEmpty, "nothing on: icon only")
+
+        let hours = AgendaItem(id: "oh", origin: .event("oh"), title: "CS 145 office hours — Troy Vasiga", courseCode: "CS 145",
+                               kind: .officeHours, start: date(2026, 9, 29, 11, 30), end: date(2026, 9, 29, 12, 30), isAllDay: false)
+        s = status(12, 0, [hours, a4])
+        check(s.reason == .nextDue, "office hours stay out of the menu bar while their layer is off, got \(s.text)")
+        s = MenuBarStatus.resolve([hours, a4], weights: weights, now: date(2026, 9, 29, 12), officeHours: true, calendar: cal)
+        check(s.reason == .inClass && s.text == "CS 145 office hours · 30m left", "switched on, they count, got \(s.text)")
+
+        let skills = work("ENGL 119", "Skills challenge 2: Proposal and pitch", .assignment, date(2026, 10, 2, 23, 59))
+        check(MenuBarStatus.name(skills) == "ENGL 119 Skills challenge 2", "subtitle cut, course added, got \(MenuBarStatus.name(skills))")
+        check(MenuBarStatus.name(engl) == "ENGL 119", "a class is just its course")
+        let long = work("MATH 135", "Assignment about modular arithmetic proofs", .assignment, date(2026, 10, 2, 23, 59))
+        check(MenuBarStatus.name(long).count == MenuBarStatus.maxNameLength && MenuBarStatus.name(long).hasSuffix("…"), "long names are cut to fit")
     }
 
     // MARK: - Week grid hours
