@@ -170,6 +170,7 @@ struct Checks {
     |---|---|---|---|---|
     | A1 | Wed Sep 16, 10:00 PM | Counting steps | | 100% |
     | A2 | Wed Sep 23, 10:00 PM | Functions | | 91.67% |
+    | A3 | Wed Sep 30, 10:00 PM | Trees | | submitted |
     | Midterm 1 | Thu Oct 8, 7:00–8:50 PM | A0–A3 | MC 1085, seat E-14 | |
     | Midterm 2 | Mon Nov 9, 7:00–8:50 PM | A0–A7 | TBA | 15 / 19 (78.9%) |
 
@@ -183,13 +184,14 @@ struct Checks {
     static func learnFolder() {
         let p = CourseFolderParser.parse(markdown: cs145, fallbackYear: 2026)
         check(p.code == "CS 145", "code, got \(p.code ?? "nil")")
-        check(p.rows.count == 4, "four rows, got \(p.rows.count)")
-        guard p.rows.count == 4 else { return }
-        check(p.rows[0].score == 100 && p.rows[0].outOf == 100, "percent mark, got \(String(describing: p.rows[0].score))")
+        check(p.rows.count == 5, "five rows, got \(p.rows.count)")
+        guard p.rows.count == 5 else { return }
+        check(p.rows[0].score == 100 && p.rows[0].outOf == 100 && p.rows[0].isDone, "percent mark, got \(String(describing: p.rows[0].score))")
         check(near(p.rows[1].score, 91.67) && p.rows[1].outOf == 100, "decimal percent mark")
-        check(p.rows[2].score == nil && p.rows[2].location == "MC 1085, seat E-14", "room column, got \(p.rows[2].location ?? "nil")")
-        check(p.rows[3].score == 15 && p.rows[3].outOf == 19 && p.rows[3].location == nil, "fraction mark wins over the percent; TBA room dropped")
-        check(p.rows[2].coverage == "A0–A3", "covers column still read")
+        check(p.rows[2].score == nil && p.rows[2].isDone, "submitted but unmarked is done")
+        check(p.rows[3].score == nil && !p.rows[3].isDone && p.rows[3].location == "MC 1085, seat E-14", "room column, got \(p.rows[3].location ?? "nil")")
+        check(p.rows[4].score == 15 && p.rows[4].outOf == 19 && p.rows[4].location == nil, "fraction mark wins over the percent; TBA room dropped")
+        check(p.rows[3].coverage == "A0–A3", "covers column still read")
         check(CourseFolderParser.parseMark("—") == nil && CourseFolderParser.parseMark("") == nil, "blank marks are nil")
 
         // Midterm 2 belongs to "Midterm 2", not the first component mentioning a midterm.
@@ -225,6 +227,16 @@ struct Checks {
         let window = DateInterval(start: date(2026, 10, 1), end: date(2026, 11, 30))
         let agenda = RecurrenceExpander.agenda(events: [slot, otherSlot, readingWeek] + hours, assessments: [midterm], in: window)
         check(agenda.filter { $0.kind == .test }.map(\.title) == ["Midterm 1", "CS145 - TST 201"], "covered slot hidden, uncovered kept, got \(agenda.filter { $0.kind == .test }.map(\.title))")
+        let quiz = Assessment(courseCode: "MATH 137", title: "Quiz 3", kind: .quiz, due: date(2026, 10, 5, 17, 30), end: date(2026, 10, 5, 18, 20))
+        let tutorial = DashEvent(id: "flow:tut", title: "MATH137 - TUT 107", courseCode: "MATH 137", kind: .tutorial,
+                                 start: date(2026, 9, 28, 17, 30), end: date(2026, 9, 28, 18, 50),
+                                 recurrence: .weekly(on: [2], until: date(2026, 10, 6)))
+        let tutorials = RecurrenceExpander.agenda(events: [tutorial], assessments: [quiz], in: window)
+            .filter { $0.kind == .tutorial }.map { cal.component(.day, from: $0.start) }
+        check(tutorials == [], "the Oct 5 tutorial gives way to Quiz 3, got \(tutorials)")
+        let septemberTutorial = RecurrenceExpander.agenda(events: [tutorial], assessments: [quiz], in: DateInterval(start: date(2026, 9, 28), end: date(2026, 9, 29)))
+        check(septemberTutorial.count == 1, "a tutorial without a quiz stays")
+
         let troyDays = agenda.filter { $0.kind == .officeHours && $0.location == "MC 5473" }.map { cal.component(.day, from: $0.start) }
         check(!troyDays.contains(13), "no office hours on the reading-week Tuesday, got \(troyDays)")
         check(troyDays.contains(6) && troyDays.contains(20), "office hours either side of reading week")

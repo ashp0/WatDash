@@ -366,6 +366,7 @@ final class AppStore {
                         merged.score = score
                         merged.outOf = incoming.outOf
                     }
+                    if incoming.isDone { merged.isDone = true }
                     data.assessments[index] = merged
                 } else {
                     var fresh = incoming

@@ -238,7 +238,7 @@ final class ImportService {
                     courseCode: code, title: row.title, kind: row.kind,
                     componentID: course.scheme.guessComponent(kind: row.kind, title: row.title)?.id,
                     due: row.due, end: row.end, coverage: row.coverage, location: row.location,
-                    score: row.score, outOf: row.outOf ?? 100,
+                    score: row.score, outOf: row.outOf ?? 100, isDone: row.isDone,
                     sourceKey: "\(code):\(row.title)", sourceID: source.id
                 )
             }

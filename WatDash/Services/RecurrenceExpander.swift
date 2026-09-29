@@ -117,6 +117,8 @@ enum RecurrenceExpander {
         // Timetable test slots ("CS145 - TST 201" from Quest or UW Flow) that
         // the course's own assessment already covers: the assessment carries
         // the title, coverage and mark, so the slot would only duplicate it.
+        // A quiz written in the tutorial slot replaces that tutorial too, and
+        // usually in a different room (the seat is on Odyssey).
         let assessmentSlots: [(code: String, interval: DateInterval)] = assessments.compactMap { assessment in
             guard assessment.kind.isSeated, let due = assessment.due, let end = assessment.agendaEnd else { return nil }
             return (assessment.courseCode, DateInterval(start: due, end: max(end, due)))
@@ -129,7 +131,7 @@ enum RecurrenceExpander {
                    cancelledDays.contains(where: { $0.start <= occurrence.start && occurrence.start < $0.end }) {
                     continue
                 }
-                if event.kind.isSeated, let code = event.courseCode,
+                if event.kind.isSeated || event.kind == .tutorial, let code = event.courseCode,
                    assessmentSlots.contains(where: { $0.code == code && overlaps($0.interval, occurrence) }) {
                     continue
                 }

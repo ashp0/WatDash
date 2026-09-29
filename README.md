@@ -17,7 +17,7 @@ logic verified by plain `swiftc` checks.
 |---|---|
 | **Today** | A grid of cards you add, remove and drag into order: now & next, today, upcoming deadlines, overload tracker, highest-impact work, two-week load chart, course grades, import, study, next-exam countdown, seat watch, inbox. A setup checklist appears until the term is fully set up. |
 | **Schedule** | Week grid with a live "now" line, overlap-aware columns, click-to-inspect popovers ("skip this one" for a cancelled lecture), double-click to add. Agenda mode for the next four weeks. |
-| **Deadlines** | Overdue / this week / next week / later / TBA, with done checkboxes, marks, and a study-prompt button on every quiz and exam. |
+| **Deadlines** | Overdue / this week / next week / later / TBA, with done checkboxes, marks, and on every quiz, midterm and exam a **Seat** button (your room and seat on Odyssey) and a study-prompt button. |
 | **Grades** | Projected term average with a likely range, chance of clearing the target, the uniform score needed on everything left, a what-if slider, and per-item leverage ("+0.60 on your average per 10 marks"). |
 | **Course** | Grading-scheme editor (weights, item counts, drop-lowest, exam flags, "final replaces midterm", "must pass the exams"), score table with per-item what-if sliders and exemptions, meetings, files, notes page map. |
 | **Study** | Builds a ready-to-paste **Claude Code prompt** for a study page: assessment, sections, notes page ranges, course rules. No API key: Claude Code runs it on your subscription using the `quiz-prep` skill in the classes folder. |
@@ -36,17 +36,31 @@ never deleted by an import.
 
 | Source | Gives you | Notes |
 |---|---|---|
-| **Course folders** | Assessments with dates and coverage, grading scheme, notes page map, study pages, notes PDF, reading week, the course's help rules and accent colour | Reads each `<Course>/CLAUDE.md` under `~/Documents/University of Waterloo Classes`. A saved outline in the folder adds class times for the sections you pick. |
+| **Course folders** | Assessments with dates, coverage, rooms and posted marks, grading scheme, weekly office hours, notes page map, study pages, notes PDF, reading week, the course's help rules and accent colour | Reads each `<Course>/CLAUDE.md` under `~/Documents/University of Waterloo Classes` (format below). A saved outline in the folder adds class times for the sections you pick. |
 | **Quest schedule** | Your actual class meetings | Copy Quest → Enroll → My Class Schedule → List View and paste; or use that page's *Download Schedule* `.ics`. |
-| **Calendar file / feed** | Anything iCalendar | Feeds refresh on a timer. LEARN's Calendar → Subscribe feed and public Google office-hour calendars both work. |
+| **Calendar file / feed** | Anything iCalendar | Feeds refresh on a timer. LEARN's Calendar → Subscribe feed and public Google office-hour calendars both work. A UW Flow schedule export (uwflow.com → Schedule → export) gives every lecture, tutorial and test slot; open the `.ics` with WatDash. |
 | **Course outline** | Every section's times plus the assessment table | Save the outline.uwaterloo.ca page as HTML. |
 | **Apple Calendar** | Calendars already on the Mac (Google, Outlook, iCloud) | Re-read whenever they change. |
 | **Waterloo Open Data** | Class times for your sections, important dates, final exam slots, seat counts, campus events | Free key from openapi.data.uwaterloo.ca, kept in the Keychain. |
 | **UW holidays** | Stat holidays that cancel classes | Anonymous feed; no key. |
 | **Quick capture** | One line of plain English | `CS 135 OH Tue 2-3pm MC 4065 weekly until Dec 4`, `math137 quiz 4 oct 19`, `A4 due fri 11:59pm`. Unsure parses wait in the inbox. |
 
-Holidays and reading week cancel **class meetings** only. Deadlines during
-reading week still stand.
+### The course-folder `CLAUDE.md`
+
+The same file briefs Claude and fills the dashboard. What WatDash reads:
+
+- `# MATH 137: Calculus 1 for Honours Mathematics (Fall 2026)`: code, title, term. "(self-study)" in the heading marks a course that never counts.
+- Under `## Assessments…`, grading bullets: `- Quizzes, 20%, best 9 of 10: …`, `- Midterm 2, 20%: …`. Sentences like "Assignments are due Wednesdays at 4:05 PM" set default times.
+- Any table with *Assessment* and *Date* columns: one assessment per row. Optional columns: *Covers* / *Sections* (coverage), *Room* (room and seat), *Mark* (`15/19`, `91.67%`, or `Submitted`), *Status* (`Submitted`, `Written`, `Done`). A posted mark only fills an empty score; marks typed in the app win.
+- `## Office hours`: one quick-capture line per weekly slot, e.g. `- Tue 11:30am-12:30pm MC 5473, Troy Vasiga, weekly until Dec 8`.
+- "Reading week is Oct 10–18.", `## Study pages` links, a "blue accent" colour, and the notes PDF under `## Files`.
+
+An item named after a component maps to it ("Midterm 2" → *Midterm 2*, "Skills challenge 1" → *Skills challenges*); otherwise the kind picks one ("Quiz 3" → *Quizzes*).
+
+Timetable test slots (UW Flow and Quest `TST`) are hidden where the course's own quiz or exam already sits, and a quiz written in the tutorial slot replaces that tutorial, since the seat on Odyssey is usually somewhere else.
+
+Holidays and reading week cancel **class meetings** and office hours only.
+Deadlines during reading week still stand.
 
 ## The grade engine
 

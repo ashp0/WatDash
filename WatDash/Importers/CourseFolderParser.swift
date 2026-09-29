@@ -23,6 +23,8 @@ struct ParsedCourseFolder: Sendable {
         var outOf: Double?
         /// Room and seat from a Room column ("MC 1085, seat E-14").
         var location: String?
+        /// Marked, or "Submitted" / "Written" / "Done" in the Mark or Status column.
+        var isDone = false
     }
 
     struct NoClassRange: Hashable, Sendable {
@@ -132,6 +134,7 @@ enum CourseFolderParser {
                 let coverageColumn = header.lastIndex(where: { $0.contains("section") || $0.contains("covers") || $0.contains("topics") })
                 let markColumn = header.firstIndex(where: { $0.contains("mark") || $0.contains("score") || $0 == "grade" })
                 let roomColumn = header.firstIndex(where: { $0.contains("room") || $0.contains("seat") || $0 == "location" || $0 == "where" })
+                let statusColumn = header.firstIndex(where: { $0.contains("status") || $0 == "done" })
                 func cell(_ column: Int?, _ row: [String]) -> String? {
                     column.flatMap { $0 < row.count ? row[$0].trimmed.nilIfEmpty : nil }
                 }
@@ -143,8 +146,10 @@ enum CourseFolderParser {
                     let (due, end) = parseDate(rawDate, year: year, defaultTime: defaultTimes[kind])
                     let mark = cell(markColumn, row).flatMap(parseMark)
                     let room = cell(roomColumn, row).flatMap { $0 == "TBA" || $0 == "—" ? nil : $0 }
+                    let status = [cell(markColumn, row), cell(statusColumn, row)].compactMap { $0 }.joined(separator: " ")
+                    let done = mark != nil || status.lowercased().firstMatch(#"\b(done|submitted|written|handed in|completed?)\b|✓"#) != nil
                     result.rows.append(.init(title: title, kind: kind, due: due, end: end, coverage: cell(coverageColumn, row),
-                                             rawDate: rawDate, score: mark?.score, outOf: mark?.outOf, location: room))
+                                             rawDate: rawDate, score: mark?.score, outOf: mark?.outOf, location: room, isDone: done))
                 }
             } else if header.first.map({ $0 == "§" || $0.contains("chapter") || $0.contains("section") }) == true,
                       header.contains(where: { $0.contains("page") }) {
