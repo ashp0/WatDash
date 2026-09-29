@@ -1,0 +1,646 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		42D6270EE940C9DD5F684D7F /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05331E5680C800DC1779E793 /* Palette.swift */; };
+		5021D6416E92AEFEAE20DBEC /* SharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB5BA48DF16B21F0E29AB5A /* SharedConstants.swift */; };
+		9F3E3F29C6061861E6450185 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D21C66F545DD0749E12B2F /* WidgetSnapshot.swift */; };
+		E0571FA46DBA5130166D69D2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3241CA7AA488F01FD6B76C7 /* AppDelegate.swift */; };
+		0C8CB8290D1A72FA6EACAD21 /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72DA65631516FE6051DFA1A4 /* Intents.swift */; };
+		3FC9E5C76F82F072FDC8CFDC /* WatDashApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E5053CDB6175EDD3D66112 /* WatDashApp.swift */; };
+		94F5E04B0FF8A2C5D1C8CEF2 /* WindowSnapshotter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6789410DE36033EAFAAAE33A /* WindowSnapshotter.swift */; };
+		2D95B3E8C281B7BB886BD713 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA68BA7AE8A31DF85B49DAE8 /* Dates.swift */; };
+		67403E4FE68D2B8F9ACB4480 /* DeterministicID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3081EB17FAFB9D130DBF77EB /* DeterministicID.swift */; };
+		13FD6777812A1BC1F8BC5856 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2FD57CD8E7DFDDBF89AEEE /* Keychain.swift */; };
+		B0F44821A2B2B8CA3901DF7D /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8179C6FBB6919CB8C98A69A8 /* Logging.swift */; };
+		8ECFE423C9E54BFE6AE039E6 /* StringConvenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7583A7B29469E1C360A3331A /* StringConvenience.swift */; };
+		53E4028F4C9A952F15081FEB /* CourseFolderParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6D6FEEE5786F86D3591310 /* CourseFolderParser.swift */; };
+		0EEF6BDF077EB7338852BAC6 /* ICSImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D5A4A6E81F61123F5364A8D /* ICSImport.swift */; };
+		9B656AC832FF7B7A60195BC7 /* ICSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C58532EBF3885D99793D5BD /* ICSParser.swift */; };
+		03E2D3A1488644BF444F9E8F /* QuickCaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5D87EA222C9B199BDAC9A0 /* QuickCaptureParser.swift */; };
+		383A45FD2112763BEAF3D539 /* ScheduleParsers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E03782D50A053D7B2E6DCD /* ScheduleParsers.swift */; };
+		0553A4037CDDF55801558FF8 /* AppData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6453971BBB0AB8A85FFA2C65 /* AppData.swift */; };
+		2435BD0D94E3B4DBACCDF7AC /* Assessment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE1863E3649AD346605A2AF /* Assessment.swift */; };
+		ED17C8358B4E6489E93E78CD /* Course.swift in Sources */ = {isa = PBXBuildFile; fileRef = E58DA34851D78FC7E0935CF6 /* Course.swift */; };
+		235DB4EB844C6B518506833A /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37E34844BE3AE45408AC8217 /* Event.swift */; };
+		A7048046D76E5CBCB611CB47 /* Source.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73278D7DCC42F3EC7DED39 /* Source.swift */; };
+		277E0003E283EBC0DA13FC28 /* CalendarSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */; };
+		DDFCFFD9AE143C2A9F25FBF2 /* DemoSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */; };
+		22A4C3169F3EA86BFEDD6D8E /* GradeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D509ED70F77A2FB0E333D33F /* GradeEngine.swift */; };
+		6359A08DC8AB393101C1ABC1 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D003EE1A7F95C6109BA110 /* HotKey.swift */; };
+		D1A3F4218C23796C4D2DB464 /* ImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31285FF4EE391F8A88D877A1 /* ImportService.swift */; };
+		67E54E9D5172BACFBDD070EE /* OpenDataClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */; };
+		D194DA28D71ABB0422F82F15 /* Projections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E0363D79AF578B018591CC /* Projections.swift */; };
+		378B93B583A0BC501BDB893D /* RecurrenceExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = F737F8E10C94C56CA82CC5EA /* RecurrenceExpander.swift */; };
+		E99911C5057CCA66FC87C745 /* SmartCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B04785FEA62B40CA2D4DE1 /* SmartCapture.swift */; };
+		41B43A06A604780AB60E5E6E /* StudyPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E47C4671F936D053115ED64 /* StudyPrompt.swift */; };
+		31933AB31A90BB1DC3D2A93D /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E1D678D1445E896A0AB55 /* AppStore.swift */; };
+		D8B0D1A9A0CF5637CBFC6F59 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = F025E036A0C4C85D7FCC4E4C /* Components.swift */; };
+		8E316B9A9FC324C584D554A5 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C85C1ED426B48DC3517C636 /* CourseDetailView.swift */; };
+		2066A70949BD0ACF11EFA122 /* DashboardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76E8CE88A7BCA82AF3CFB88 /* DashboardCards.swift */; };
+		D8E47577FFCCBB63E694AB02 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77445E0D45C5FA07A7584B96 /* DashboardView.swift */; };
+		EEBD36E07306B4D19FCA3B80 /* DeadlinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB58FB72036BE6E249328F0 /* DeadlinesView.swift */; };
+		671AE6F6A7D0B905116AFD8A /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2418335D1DB4CD697BDE402A /* Editors.swift */; };
+		62C41FE489974EF559FC1314 /* GradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD938DAF9875EEAF9C1F16E /* GradesView.swift */; };
+		98C6AB770FCAE5EB3296F154 /* ImportSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CA10BA688ED9EC287113A9D /* ImportSheets.swift */; };
+		4578D3F5F33DDDEA2954D185 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582592EC80C597DAF187383D /* ImportView.swift */; };
+		F56204D8FF12A540B17DCA4C /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD4B04FA339D9DA6B62D2981 /* MenuBarView.swift */; };
+		A16F51E50A44521C2105A0BD /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02AA59388B7BAD8E04C8BE58 /* QuickCaptureView.swift */; };
+		9D9738535B76F42547EA239D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4E45DC166EE24A33F2DCCA /* RootView.swift */; };
+		BE8F3EB9ED0EC3B7B4B8F90F /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2D8B192B87CCFAA97F93E7D /* ScheduleView.swift */; };
+		97A2FF53CDC761B5857CCEC1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE3589E8775122C6E75BDEA1 /* SettingsView.swift */; };
+		6672AF92E81D5D318EEEB699 /* StudyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F86E5471BC72570356F9CEC /* StudyView.swift */; };
+		D3BBED9BD2A6B2CF6B75B6AC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4DFEC3D04430DA28CA4723B6 /* Assets.xcassets */; };
+		29D0B1182522CE08FFE0DA89 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05331E5680C800DC1779E793 /* Palette.swift */; };
+		13A00315BD8CF155D622CD2D /* SharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB5BA48DF16B21F0E29AB5A /* SharedConstants.swift */; };
+		1C2EBD47C70B13EC2061051F /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D21C66F545DD0749E12B2F /* WidgetSnapshot.swift */; };
+		5873B25C266B1027152C5E54 /* WatDashWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37191C661FA2C3A302BAD55C /* WatDashWidgets.swift */; };
+		335E21D532669469A1F88E13 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F6E55004C7A7483326EEB38 /* Assets.xcassets */; };
+		B08425DBD2F801FF813D56F4 /* WatDashWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		56EC49B5CA93B1C6AACF4825 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DB699A055CF5893FE055AB7F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DCFC1CA985A12CB426067EF9;
+			remoteInfo = WatDashWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3FE4D80ED821AAE8271C3A66 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B08425DBD2F801FF813D56F4 /* WatDashWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		05331E5680C800DC1779E793 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Palette.swift"; sourceTree = "<group>"; };
+		DDB5BA48DF16B21F0E29AB5A /* SharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SharedConstants.swift"; sourceTree = "<group>"; };
+		44D21C66F545DD0749E12B2F /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetSnapshot.swift"; sourceTree = "<group>"; };
+		D3241CA7AA488F01FD6B76C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate.swift"; sourceTree = "<group>"; };
+		72DA65631516FE6051DFA1A4 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Intents.swift"; sourceTree = "<group>"; };
+		B4E5053CDB6175EDD3D66112 /* WatDashApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WatDashApp.swift"; sourceTree = "<group>"; };
+		6789410DE36033EAFAAAE33A /* WindowSnapshotter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WindowSnapshotter.swift"; sourceTree = "<group>"; };
+		4DFEC3D04430DA28CA4723B6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		DA68BA7AE8A31DF85B49DAE8 /* Dates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Dates.swift"; sourceTree = "<group>"; };
+		3081EB17FAFB9D130DBF77EB /* DeterministicID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DeterministicID.swift"; sourceTree = "<group>"; };
+		3E2FD57CD8E7DFDDBF89AEEE /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Keychain.swift"; sourceTree = "<group>"; };
+		8179C6FBB6919CB8C98A69A8 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Logging.swift"; sourceTree = "<group>"; };
+		7583A7B29469E1C360A3331A /* StringConvenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StringConvenience.swift"; sourceTree = "<group>"; };
+		7E6D6FEEE5786F86D3591310 /* CourseFolderParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CourseFolderParser.swift"; sourceTree = "<group>"; };
+		5D5A4A6E81F61123F5364A8D /* ICSImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ICSImport.swift"; sourceTree = "<group>"; };
+		8C58532EBF3885D99793D5BD /* ICSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ICSParser.swift"; sourceTree = "<group>"; };
+		0F5D87EA222C9B199BDAC9A0 /* QuickCaptureParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "QuickCaptureParser.swift"; sourceTree = "<group>"; };
+		74E03782D50A053D7B2E6DCD /* ScheduleParsers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ScheduleParsers.swift"; sourceTree = "<group>"; };
+		992A0BE642F6B881413BFD7B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		6453971BBB0AB8A85FFA2C65 /* AppData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppData.swift"; sourceTree = "<group>"; };
+		BBE1863E3649AD346605A2AF /* Assessment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Assessment.swift"; sourceTree = "<group>"; };
+		E58DA34851D78FC7E0935CF6 /* Course.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Course.swift"; sourceTree = "<group>"; };
+		37E34844BE3AE45408AC8217 /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Event.swift"; sourceTree = "<group>"; };
+		BE73278D7DCC42F3EC7DED39 /* Source.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Source.swift"; sourceTree = "<group>"; };
+		9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CalendarSync.swift"; sourceTree = "<group>"; };
+		21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DemoSeeder.swift"; sourceTree = "<group>"; };
+		D509ED70F77A2FB0E333D33F /* GradeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GradeEngine.swift"; sourceTree = "<group>"; };
+		00D003EE1A7F95C6109BA110 /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HotKey.swift"; sourceTree = "<group>"; };
+		31285FF4EE391F8A88D877A1 /* ImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportService.swift"; sourceTree = "<group>"; };
+		124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenDataClient.swift"; sourceTree = "<group>"; };
+		32E0363D79AF578B018591CC /* Projections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Projections.swift"; sourceTree = "<group>"; };
+		F737F8E10C94C56CA82CC5EA /* RecurrenceExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RecurrenceExpander.swift"; sourceTree = "<group>"; };
+		F8B04785FEA62B40CA2D4DE1 /* SmartCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SmartCapture.swift"; sourceTree = "<group>"; };
+		4E47C4671F936D053115ED64 /* StudyPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StudyPrompt.swift"; sourceTree = "<group>"; };
+		490E1D678D1445E896A0AB55 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore.swift"; sourceTree = "<group>"; };
+		F025E036A0C4C85D7FCC4E4C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
+		7C85C1ED426B48DC3517C636 /* CourseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CourseDetailView.swift"; sourceTree = "<group>"; };
+		B76E8CE88A7BCA82AF3CFB88 /* DashboardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardCards.swift"; sourceTree = "<group>"; };
+		77445E0D45C5FA07A7584B96 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardView.swift"; sourceTree = "<group>"; };
+		EEB58FB72036BE6E249328F0 /* DeadlinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DeadlinesView.swift"; sourceTree = "<group>"; };
+		2418335D1DB4CD697BDE402A /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Editors.swift"; sourceTree = "<group>"; };
+		2BD938DAF9875EEAF9C1F16E /* GradesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GradesView.swift"; sourceTree = "<group>"; };
+		2CA10BA688ED9EC287113A9D /* ImportSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportSheets.swift"; sourceTree = "<group>"; };
+		582592EC80C597DAF187383D /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportView.swift"; sourceTree = "<group>"; };
+		FD4B04FA339D9DA6B62D2981 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView.swift"; sourceTree = "<group>"; };
+		02AA59388B7BAD8E04C8BE58 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "QuickCaptureView.swift"; sourceTree = "<group>"; };
+		7B4E45DC166EE24A33F2DCCA /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
+		A2D8B192B87CCFAA97F93E7D /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ScheduleView.swift"; sourceTree = "<group>"; };
+		FE3589E8775122C6E75BDEA1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView.swift"; sourceTree = "<group>"; };
+		8F86E5471BC72570356F9CEC /* StudyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StudyView.swift"; sourceTree = "<group>"; };
+		83DA37F0D3150D69838CC79A /* WatDash.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "WatDash.entitlements"; sourceTree = "<group>"; };
+		7F6E55004C7A7483326EEB38 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		0F54AC8FAF7A6D78D7A56EC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		D05772EE174DEEB5A773BE47 /* WatDashWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "WatDashWidgets.entitlements"; sourceTree = "<group>"; };
+		37191C661FA2C3A302BAD55C /* WatDashWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WatDashWidgets.swift"; sourceTree = "<group>"; };
+		034D8A708973AF87F6ECDA67 /* WatDash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatDash.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WatDashWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		26B684537A18C9E47BAB0815 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A4A9297111915B8A3ADB5A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C54A480F94507B558C9D0AA6 /* WatDash */ = {
+			isa = PBXGroup;
+			children = (
+				950E3E0A8A3E6E744C95D948 /* Shared */,
+				C900115B96D6932A80CE0F92 /* WatDash */,
+				538B8F57C56DFA7FA8DD5492 /* WatDashWidgets */,
+				ABD9BF71863AAF2BACD8D5A0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		950E3E0A8A3E6E744C95D948 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				05331E5680C800DC1779E793 /* Palette.swift */,
+				DDB5BA48DF16B21F0E29AB5A /* SharedConstants.swift */,
+				44D21C66F545DD0749E12B2F /* WidgetSnapshot.swift */,
+			);
+			path = "Shared";
+			sourceTree = "<group>";
+		};
+		C900115B96D6932A80CE0F92 /* WatDash */ = {
+			isa = PBXGroup;
+			children = (
+				CA3750BB90C219F5275A36BD /* App */,
+				08D318DA633852DC1FD11EFE /* Core */,
+				9A0B7B4EEB8C5D6FD6EED2C4 /* Importers */,
+				780ADBC4141D5DC121A8CDBF /* Models */,
+				9F83BC7389F886EB8267612B /* Services */,
+				0A0D764986F222C82A5B7D1C /* Store */,
+				E5A5FFC6081081F026CD1D38 /* Views */,
+				4DFEC3D04430DA28CA4723B6 /* Assets.xcassets */,
+				992A0BE642F6B881413BFD7B /* Info.plist */,
+				83DA37F0D3150D69838CC79A /* WatDash.entitlements */,
+			);
+			path = "WatDash";
+			sourceTree = "<group>";
+		};
+		CA3750BB90C219F5275A36BD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D3241CA7AA488F01FD6B76C7 /* AppDelegate.swift */,
+				72DA65631516FE6051DFA1A4 /* Intents.swift */,
+				B4E5053CDB6175EDD3D66112 /* WatDashApp.swift */,
+				6789410DE36033EAFAAAE33A /* WindowSnapshotter.swift */,
+			);
+			path = "App";
+			sourceTree = "<group>";
+		};
+		08D318DA633852DC1FD11EFE /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				DA68BA7AE8A31DF85B49DAE8 /* Dates.swift */,
+				3081EB17FAFB9D130DBF77EB /* DeterministicID.swift */,
+				3E2FD57CD8E7DFDDBF89AEEE /* Keychain.swift */,
+				8179C6FBB6919CB8C98A69A8 /* Logging.swift */,
+				7583A7B29469E1C360A3331A /* StringConvenience.swift */,
+			);
+			path = "Core";
+			sourceTree = "<group>";
+		};
+		9A0B7B4EEB8C5D6FD6EED2C4 /* Importers */ = {
+			isa = PBXGroup;
+			children = (
+				7E6D6FEEE5786F86D3591310 /* CourseFolderParser.swift */,
+				5D5A4A6E81F61123F5364A8D /* ICSImport.swift */,
+				8C58532EBF3885D99793D5BD /* ICSParser.swift */,
+				0F5D87EA222C9B199BDAC9A0 /* QuickCaptureParser.swift */,
+				74E03782D50A053D7B2E6DCD /* ScheduleParsers.swift */,
+			);
+			path = "Importers";
+			sourceTree = "<group>";
+		};
+		780ADBC4141D5DC121A8CDBF /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6453971BBB0AB8A85FFA2C65 /* AppData.swift */,
+				BBE1863E3649AD346605A2AF /* Assessment.swift */,
+				E58DA34851D78FC7E0935CF6 /* Course.swift */,
+				37E34844BE3AE45408AC8217 /* Event.swift */,
+				BE73278D7DCC42F3EC7DED39 /* Source.swift */,
+			);
+			path = "Models";
+			sourceTree = "<group>";
+		};
+		9F83BC7389F886EB8267612B /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */,
+				21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */,
+				D509ED70F77A2FB0E333D33F /* GradeEngine.swift */,
+				00D003EE1A7F95C6109BA110 /* HotKey.swift */,
+				31285FF4EE391F8A88D877A1 /* ImportService.swift */,
+				124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */,
+				32E0363D79AF578B018591CC /* Projections.swift */,
+				F737F8E10C94C56CA82CC5EA /* RecurrenceExpander.swift */,
+				F8B04785FEA62B40CA2D4DE1 /* SmartCapture.swift */,
+				4E47C4671F936D053115ED64 /* StudyPrompt.swift */,
+			);
+			path = "Services";
+			sourceTree = "<group>";
+		};
+		0A0D764986F222C82A5B7D1C /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				490E1D678D1445E896A0AB55 /* AppStore.swift */,
+			);
+			path = "Store";
+			sourceTree = "<group>";
+		};
+		E5A5FFC6081081F026CD1D38 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F025E036A0C4C85D7FCC4E4C /* Components.swift */,
+				7C85C1ED426B48DC3517C636 /* CourseDetailView.swift */,
+				B76E8CE88A7BCA82AF3CFB88 /* DashboardCards.swift */,
+				77445E0D45C5FA07A7584B96 /* DashboardView.swift */,
+				EEB58FB72036BE6E249328F0 /* DeadlinesView.swift */,
+				2418335D1DB4CD697BDE402A /* Editors.swift */,
+				2BD938DAF9875EEAF9C1F16E /* GradesView.swift */,
+				2CA10BA688ED9EC287113A9D /* ImportSheets.swift */,
+				582592EC80C597DAF187383D /* ImportView.swift */,
+				FD4B04FA339D9DA6B62D2981 /* MenuBarView.swift */,
+				02AA59388B7BAD8E04C8BE58 /* QuickCaptureView.swift */,
+				7B4E45DC166EE24A33F2DCCA /* RootView.swift */,
+				A2D8B192B87CCFAA97F93E7D /* ScheduleView.swift */,
+				FE3589E8775122C6E75BDEA1 /* SettingsView.swift */,
+				8F86E5471BC72570356F9CEC /* StudyView.swift */,
+			);
+			path = "Views";
+			sourceTree = "<group>";
+		};
+		538B8F57C56DFA7FA8DD5492 /* WatDashWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				7F6E55004C7A7483326EEB38 /* Assets.xcassets */,
+				0F54AC8FAF7A6D78D7A56EC4 /* Info.plist */,
+				D05772EE174DEEB5A773BE47 /* WatDashWidgets.entitlements */,
+				37191C661FA2C3A302BAD55C /* WatDashWidgets.swift */,
+			);
+			path = "WatDashWidgets";
+			sourceTree = "<group>";
+		};
+		ABD9BF71863AAF2BACD8D5A0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				034D8A708973AF87F6ECDA67 /* WatDash.app */,
+				1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7B1259AFB3E681F0253FA49E /* WatDash */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2EFB4A2CA5028CD35C46DEE3 /* Build configuration list for PBXNativeTarget "WatDash" */;
+			buildPhases = (
+				DB20D3F5E91D591CEC2A8E83 /* Sources */,
+				26B684537A18C9E47BAB0815 /* Frameworks */,
+				FC6B737FB9190B3CA2524F8D /* Resources */,
+				3FE4D80ED821AAE8271C3A66 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8EB2258A1A52E212681E1E09 /* PBXTargetDependency */,
+			);
+			name = WatDash;
+			productName = WatDash;
+			productReference = 034D8A708973AF87F6ECDA67 /* WatDash.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DCFC1CA985A12CB426067EF9 /* WatDashWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFE68A82A26A49E76303C383 /* Build configuration list for PBXNativeTarget "WatDashWidgets" */;
+			buildPhases = (
+				244677222C0CAB5ED3E14F09 /* Sources */,
+				1A4A9297111915B8A3ADB5A5 /* Frameworks */,
+				AA26B131D27FF177543EA3BC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WatDashWidgets;
+			productName = WatDashWidgets;
+			productReference = 1FCF2614FF814680FEB08BBF /* WatDashWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DB699A055CF5893FE055AB7F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					7B1259AFB3E681F0253FA49E = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					DCFC1CA985A12CB426067EF9 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 358E7A29325DD7E1403C56E4 /* Build configuration list for PBXProject "WatDash" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C54A480F94507B558C9D0AA6;
+			productRefGroup = ABD9BF71863AAF2BACD8D5A0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7B1259AFB3E681F0253FA49E /* WatDash */,
+				DCFC1CA985A12CB426067EF9 /* WatDashWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FC6B737FB9190B3CA2524F8D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3BBED9BD2A6B2CF6B75B6AC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA26B131D27FF177543EA3BC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				335E21D532669469A1F88E13 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DB20D3F5E91D591CEC2A8E83 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				42D6270EE940C9DD5F684D7F /* Palette.swift in Sources */,
+				5021D6416E92AEFEAE20DBEC /* SharedConstants.swift in Sources */,
+				9F3E3F29C6061861E6450185 /* WidgetSnapshot.swift in Sources */,
+				E0571FA46DBA5130166D69D2 /* AppDelegate.swift in Sources */,
+				0C8CB8290D1A72FA6EACAD21 /* Intents.swift in Sources */,
+				3FC9E5C76F82F072FDC8CFDC /* WatDashApp.swift in Sources */,
+				94F5E04B0FF8A2C5D1C8CEF2 /* WindowSnapshotter.swift in Sources */,
+				2D95B3E8C281B7BB886BD713 /* Dates.swift in Sources */,
+				67403E4FE68D2B8F9ACB4480 /* DeterministicID.swift in Sources */,
+				13FD6777812A1BC1F8BC5856 /* Keychain.swift in Sources */,
+				B0F44821A2B2B8CA3901DF7D /* Logging.swift in Sources */,
+				8ECFE423C9E54BFE6AE039E6 /* StringConvenience.swift in Sources */,
+				53E4028F4C9A952F15081FEB /* CourseFolderParser.swift in Sources */,
+				0EEF6BDF077EB7338852BAC6 /* ICSImport.swift in Sources */,
+				9B656AC832FF7B7A60195BC7 /* ICSParser.swift in Sources */,
+				03E2D3A1488644BF444F9E8F /* QuickCaptureParser.swift in Sources */,
+				383A45FD2112763BEAF3D539 /* ScheduleParsers.swift in Sources */,
+				0553A4037CDDF55801558FF8 /* AppData.swift in Sources */,
+				2435BD0D94E3B4DBACCDF7AC /* Assessment.swift in Sources */,
+				ED17C8358B4E6489E93E78CD /* Course.swift in Sources */,
+				235DB4EB844C6B518506833A /* Event.swift in Sources */,
+				A7048046D76E5CBCB611CB47 /* Source.swift in Sources */,
+				277E0003E283EBC0DA13FC28 /* CalendarSync.swift in Sources */,
+				DDFCFFD9AE143C2A9F25FBF2 /* DemoSeeder.swift in Sources */,
+				22A4C3169F3EA86BFEDD6D8E /* GradeEngine.swift in Sources */,
+				6359A08DC8AB393101C1ABC1 /* HotKey.swift in Sources */,
+				D1A3F4218C23796C4D2DB464 /* ImportService.swift in Sources */,
+				67E54E9D5172BACFBDD070EE /* OpenDataClient.swift in Sources */,
+				D194DA28D71ABB0422F82F15 /* Projections.swift in Sources */,
+				378B93B583A0BC501BDB893D /* RecurrenceExpander.swift in Sources */,
+				E99911C5057CCA66FC87C745 /* SmartCapture.swift in Sources */,
+				41B43A06A604780AB60E5E6E /* StudyPrompt.swift in Sources */,
+				31933AB31A90BB1DC3D2A93D /* AppStore.swift in Sources */,
+				D8B0D1A9A0CF5637CBFC6F59 /* Components.swift in Sources */,
+				8E316B9A9FC324C584D554A5 /* CourseDetailView.swift in Sources */,
+				2066A70949BD0ACF11EFA122 /* DashboardCards.swift in Sources */,
+				D8E47577FFCCBB63E694AB02 /* DashboardView.swift in Sources */,
+				EEBD36E07306B4D19FCA3B80 /* DeadlinesView.swift in Sources */,
+				671AE6F6A7D0B905116AFD8A /* Editors.swift in Sources */,
+				62C41FE489974EF559FC1314 /* GradesView.swift in Sources */,
+				98C6AB770FCAE5EB3296F154 /* ImportSheets.swift in Sources */,
+				4578D3F5F33DDDEA2954D185 /* ImportView.swift in Sources */,
+				F56204D8FF12A540B17DCA4C /* MenuBarView.swift in Sources */,
+				A16F51E50A44521C2105A0BD /* QuickCaptureView.swift in Sources */,
+				9D9738535B76F42547EA239D /* RootView.swift in Sources */,
+				BE8F3EB9ED0EC3B7B4B8F90F /* ScheduleView.swift in Sources */,
+				97A2FF53CDC761B5857CCEC1 /* SettingsView.swift in Sources */,
+				6672AF92E81D5D318EEEB699 /* StudyView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		244677222C0CAB5ED3E14F09 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				29D0B1182522CE08FFE0DA89 /* Palette.swift in Sources */,
+				13A00315BD8CF155D622CD2D /* SharedConstants.swift in Sources */,
+				1C2EBD47C70B13EC2061051F /* WidgetSnapshot.swift in Sources */,
+				5873B25C266B1027152C5E54 /* WatDashWidgets.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8EB2258A1A52E212681E1E09 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DCFC1CA985A12CB426067EF9 /* WatDashWidgets */;
+			targetProxy = 56EC49B5CA93B1C6AACF4825 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3EA9552834DE5C47DC8707B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 3AML23Y649;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GENERATE_INFOPLIST_FILE = NO;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				WATDASH_APP_GROUP = 3AML23Y649.com.ashwinpaudel.WatDash;
+			};
+			name = Debug;
+		};
+		8D2AF3A2389AB24543178325 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WatDash/WatDash.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = WatDash/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		10976693DDC5D30EAD092D16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WatDashWidgets/WatDashWidgets.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = WatDashWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		8221362659F971D1D455E4FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3AML23Y649;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				WATDASH_APP_GROUP = 3AML23Y649.com.ashwinpaudel.WatDash;
+			};
+			name = Release;
+		};
+		A141A18632EA094E41A6E83C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WatDash/WatDash.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = WatDash/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		47E72E7EB160A5BDAFD2852B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WatDashWidgets/WatDashWidgets.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = WatDashWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashwinpaudel.WatDash.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		358E7A29325DD7E1403C56E4 /* Build configuration list for PBXProject "WatDash" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3EA9552834DE5C47DC8707B8 /* Debug */,
+				8221362659F971D1D455E4FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2EFB4A2CA5028CD35C46DEE3 /* Build configuration list for PBXNativeTarget "WatDash" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D2AF3A2389AB24543178325 /* Debug */,
+				A141A18632EA094E41A6E83C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE68A82A26A49E76303C383 /* Build configuration list for PBXNativeTarget "WatDashWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				10976693DDC5D30EAD092D16 /* Debug */,
+				47E72E7EB160A5BDAFD2852B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DB699A055CF5893FE055AB7F /* Project object */;
+}

@@ -1,0 +1,425 @@
+//
+//  Checks.swift
+//  WatDash
+//
+//  Assertions on the pure logic — parsers, recurrence, the grade engine —
+//  compiled natively by Tools/run_checks.sh. No app, no simulator, no clock:
+//  every "now" is fixed so results are reproducible.
+//
+
+import Foundation
+
+@main
+struct Checks {
+    nonisolated(unsafe) static var failures = 0
+    nonisolated(unsafe) static var passes = 0
+
+    static func check(_ condition: Bool, _ message: @autoclosure () -> String, file: String = #fileID, line: Int = #line) {
+        if condition {
+            passes += 1
+        } else {
+            failures += 1
+            print("✗ \(message())  (\(file):\(line))")
+        }
+    }
+
+    static func near(_ a: Double?, _ b: Double, _ tolerance: Double = 0.01) -> Bool {
+        guard let a else { return false }
+        return abs(a - b) <= tolerance
+    }
+
+    static let cal = Waterloo.calendar
+
+    static func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 0, _ min: Int = 0) -> Date {
+        cal.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
+    }
+
+    static func main() {
+        courseFolder()
+        quest()
+        outline()
+        recurrence()
+        grades()
+        capture()
+        ics()
+        studyPrompt()
+        realFolders()
+        print("\(passes) passed, \(failures) failed")
+        if failures > 0 { exit(1) }
+    }
+
+    // MARK: - Course folder CLAUDE.md
+
+    static let math137 = """
+    # MATH 137: Calculus 1 for Honours Mathematics (Fall 2026)
+
+    ## Files
+
+    - `MATH_137.pdf`: course notes, Fall 2026 edition, 263 pages.
+
+    ## Assessments
+
+    - Quizzes, 20%, best 9 of 10: Mondays at 5:30 PM in the tutorial slot, 50 minutes, closed book, no aids.
+    - Midterm, 30%: Monday Oct 26, 7:00–8:50 PM. No quiz that day.
+    - Final, 50%: date set by the Registrar.
+
+    Last year's Quiz 2 layout (20 points, 35 minutes): short answer 2 × [2].
+
+    ## Calendar
+
+    | Assessment | Date | Notes sections |
+    |---|---|---|
+    | Quiz 1 | Mon Sep 21 | 0.1–1.1 |
+    | Quiz 3 | Mon Oct 5 | 1.4–1.5, 2.1 |
+    | Midterm | Mon Oct 26, 7:00 PM | Cumulative |
+    | Final | TBA | Everything, including 4.10 |
+
+    Reading week is Oct 10–18.
+
+    ## Notes page map
+
+    | § | Topic | Starts on page |
+    |---|---|---|
+    | 1.2 | Sequences and their limits | 37 (problems p. 49) |
+    | 2.1 | Introduction to function limits | 74 |
+
+    ## Study pages
+
+    - **MATH 137 Quiz Prep**: https://claude.ai/artifact/Wzicy9hD3mTDZfd7pByCFb. Source `study/quiz-prep.src.html`, blue accent.
+    """
+
+    static let math135 = """
+    # MATH 135: Algebra for Honours Mathematics (Fall 2026)
+
+    ## How to help in this course
+
+    - Teach the needed ideas with examples that differ from the assignment.
+
+    ## Assessments and what they cover
+
+    Assignments are due Wednesdays at 4:05 PM. Quizzes are Wednesdays, 4:00–5:20 PM.
+
+    | Assessment | Date | Learning objectives | Notes sections |
+    |---|---|---|---|
+    | Assignment W3 | Wed Sep 30, 4:05 PM | 7–10 | 3.2–3.5, 5.1–5.3 |
+    | Quiz W4 | Wed Oct 7, 4:00–5:20 PM | 11–17 | 3.6–4.3, 5.4–5.5 |
+    | Quiz W5 | Wed Oct 28 | 18–22 | 6.1–6.5 |
+
+    ## Notes page map
+
+    | Chapter | Topic | Page | Sections |
+    |---|---|---|---|
+    | 3 | Proving statements | 39 | 3.1 p. 40, 3.2 p. 45, 3.3 p. 49 |
+    | 6 | Greatest common divisor | 100 | 6.1–6.8, pp. 100–128 |
+    """
+
+    static func courseFolder() {
+        let p = CourseFolderParser.parse(markdown: math137, fallbackYear: 2026)
+        check(p.code == "MATH 137", "course code, got \(p.code ?? "nil")")
+        check(p.title == "Calculus 1 for Honours Mathematics", "title, got \(p.title ?? "nil")")
+        check(p.termName == "Fall 2026", "term")
+        check(p.components.count == 3, "three components, got \(p.components.map(\.name))")
+        if let quizzes = p.components.first {
+            check(quizzes.name == "Quizzes" && quizzes.weight == 20 && quizzes.dropLowest == 1 && quizzes.expectedCount == 10,
+                  "quizzes best 9 of 10, got \(quizzes)")
+        }
+        check(p.components.dropFirst().allSatisfy(\.isExam), "midterm and final are exams")
+        check(p.rows.count == 4, "four calendar rows, got \(p.rows.count)")
+        if let quiz1 = p.rows.first {
+            check(quiz1.kind == .quiz, "quiz kind")
+            check(quiz1.due == date(2026, 9, 21, 17, 30), "Quiz 1 at the default 5:30 PM, got \(String(describing: quiz1.due))")
+            check(quiz1.end == date(2026, 9, 21, 18, 20), "Quiz 1 lasts 50 minutes, got \(String(describing: quiz1.end))")
+            check(quiz1.coverage == "0.1–1.1", "coverage")
+        }
+        if let midterm = p.rows.first(where: { $0.title == "Midterm" }) {
+            check(midterm.kind == .test && midterm.due == date(2026, 10, 26, 19), "midterm 7 PM")
+        }
+        check(p.rows.last?.due == nil && p.rows.last?.kind == .exam, "final is TBA")
+        check(p.noClassRanges.first?.start == date(2026, 10, 10) && p.noClassRanges.first?.end == date(2026, 10, 18), "reading week range")
+        check(p.pageMap.map(\.section) == ["1.2", "2.1"] && p.pageMap.first?.problemsPage == 49, "page map")
+        check(p.studyLinks.first?.url == "https://claude.ai/artifact/Wzicy9hD3mTDZfd7pByCFb", "study link url, got \(p.studyLinks.first?.url ?? "nil")")
+        check(p.notesFile == "MATH_137.pdf", "notes file")
+        check(!p.teachDontAnswer, "137 has no teach-don't-answer rule")
+        check(p.accentIndex == 0, "blue accent maps to palette blue")
+
+        let q = CourseFolderParser.parse(markdown: math135, fallbackYear: 2026)
+        check(q.teachDontAnswer, "135 teach-don't-answer rule detected")
+        check(q.rows.first?.kind == .assignment && q.rows.first?.due == date(2026, 9, 30, 16, 5), "Assignment W3 due 4:05 PM")
+        check(q.rows[1].due == date(2026, 10, 7, 16) && q.rows[1].end == date(2026, 10, 7, 17, 20), "Quiz W4 4:00–5:20 PM")
+        check(q.rows[2].due == date(2026, 10, 28, 16), "Quiz W5 takes the default quiz time")
+        check(q.rows[1].coverage == "3.6–4.3, 5.4–5.5", "coverage uses the notes-sections column")
+        check(q.pageMap.map(\.section) == ["3.1", "3.2", "3.3", "6"], "chapter page map, got \(q.pageMap.map(\.section))")
+    }
+
+    // MARK: - Quest paste
+
+    static func quest() {
+        let paste = """
+        MATH 137 - Calculus 1 for Honours Mathematics
+        Status\tUnits\tGrading\tGrade\tDeadlines
+        Enrolled\t0.50\tNumeric Grading Basis\t\tAcademic Calendar Deadlines
+        Class Nbr\tSection\tComponent\tDays & Times\tRoom\tInstructor\tStart/End Date
+        4321\t005\tLEC\tMWF 10:30AM - 11:20AM\tSTC 0010\tRobert Garbary\t09/09/2026 - 12/08/2026
+        4400\t104\tTUT\tM 5:30PM - 6:50PM\tMC 1085\tTBA\t09/09/2026 - 12/08/2026
+        CS 135 - Designing Functional Programs
+        5120\t002\tLEC\tTTh 8:30AM - 9:50AM\tMC 2065\tSomeone Prof\t09/09/2026 - 12/08/2026
+        """
+        let meetings = QuestScheduleParser.parse(paste, year: 2026)
+        check(meetings.count == 3, "three meetings, got \(meetings.count)")
+        guard meetings.count == 3 else { return }
+        check(meetings[0].courseCode == "MATH 137" && meetings[0].weekdays == [2, 4, 6], "MWF")
+        check(meetings[0].startMinutes == 630 && meetings[0].endMinutes == 680, "10:30–11:20")
+        check(meetings[0].location == "STC 0010" && meetings[0].section == "005" && meetings[0].component == "LEC", "room/section/component")
+        check(meetings[1].weekdays == [2] && meetings[1].startMinutes == 17 * 60 + 30, "tutorial Monday 5:30 PM")
+        check(meetings[1].instructor == nil, "TBA instructor dropped")
+        check(meetings[2].courseCode == "CS 135" && meetings[2].weekdays == [3, 5], "TTh")
+
+        let event = meetings[0].event(sourceID: nil, fallbackStart: date(2026, 9, 8), fallbackEnd: date(2026, 12, 8))
+        check(event?.start == date(2026, 9, 9, 10, 30), "first MWF meeting on or after Sep 9 is Wed Sep 9")
+        check(event?.recurrence?.weekdays == [2, 4, 6], "weekly MWF rule")
+    }
+
+    // MARK: - Outline
+
+    static func outline() {
+        let html = """
+        <html><head><title>Fall 2026: Calculus 1 for Honours Mathematics</title></head><body>
+        <figure class="schedule-info"><table><tbody>
+        <tr><th rowspan="1">MATH 137 <span class="section">005 <span class="class-type">[LEC]</span></span></th>
+        <td class="meet-days"><div class="days-visual" title="Monday , Wednesday , Friday" aria-hidden="true"></div>
+        <div class="date-range"><span>Sep 9 - Dec 8</span></div></td>
+        <td>10:30AM - 11:20AM</td><td>STC 0010</td>
+        <td rowspan="1"><div class="instructor-info"><span>Robert Garbary</span></div></td></tr>
+        <tr><th rowspan="1">MATH 137 <span class="section">201 <span class="class-type">[TST]</span></span></th>
+        <td class="meet-days"><div class="days-visual" title="Monday" aria-hidden="true"></div>
+        <div class="date-range"><span>Oct 26</span></div></td>
+        <td>07:00PM - 08:50PM</td><td></td></tr>
+        </tbody></table></figure>
+        <h2 id="assessments_amp_activities" class="header">Assessments &amp; Activities</h2>
+        <div class="multitable-container"><table class="multitable"><thead><tr><th>Component</th></tr></thead><tbody>
+        <tr><td> Quizzes </td><td> Mondays at 5:30 pm </td><td> In-person </td><td> 20 </td></tr>
+        <tr><td> Midterm Exam </td><td> Monday, October 26 at 7:00 pm </td><td> In-person </td><td> 30 </td></tr>
+        <tr><td> Final Exam </td><td> TBA </td><td> In-person </td><td> 50 </td></tr>
+        </tbody></table></div></body></html>
+        """
+        let parsed = OutlineParser.parse(html: html, year: 2026)
+        check(parsed.courseCode == "MATH 137", "outline course code")
+        check(parsed.courseTitle == "Calculus 1 for Honours Mathematics", "outline title, got \(parsed.courseTitle ?? "nil")")
+        check(parsed.meetings.count == 2, "two sections, got \(parsed.meetings.count)")
+        check(parsed.meetings.first?.weekdays == [2, 4, 6] && parsed.meetings.first?.startMinutes == 630, "LEC 005 MWF 10:30")
+        check(parsed.meetings.first?.instructor == "Robert Garbary", "instructor")
+        check(parsed.meetings.last?.firstDay == date(2026, 10, 26) && parsed.meetings.last?.lastDay == date(2026, 10, 26), "TST single day")
+        let testEvent = parsed.meetings.last?.event(sourceID: nil, fallbackStart: date(2026, 9, 8), fallbackEnd: date(2026, 12, 8))
+        check(testEvent?.recurrence == nil && testEvent?.kind == .test, "single-day TST is a one-off test")
+        let scheme = OutlineParser.scheme(from: parsed.assessments)
+        check(scheme.components.map(\.weight) == [20, 30, 50], "outline weights, got \(scheme.components.map(\.weight))")
+        check(scheme.components[1].isExam && !scheme.components[0].isExam, "exam flags")
+    }
+
+    // MARK: - Recurrence
+
+    static func recurrence() {
+        let lecture = DashEvent(
+            id: "lec", title: "MATH 137 LEC 005", courseCode: "MATH 137", kind: .lecture,
+            start: date(2026, 9, 9, 10, 30), end: date(2026, 9, 9, 11, 20),
+            recurrence: .weekly(on: [2, 4, 6], until: date(2026, 12, 8, 23, 59)),
+            exceptionDates: [date(2026, 9, 11, 10, 30)],
+            timeZoneID: "America/Toronto"
+        )
+        let term = DateInterval(start: date(2026, 9, 1), end: date(2026, 12, 31))
+        let all = RecurrenceExpander.occurrences(of: lecture, in: term)
+        // Sep 9 – Dec 8 MWF: 39 meetings, minus the one exception.
+        check(all.count == 38, "MWF meetings Sep 9–Dec 8 minus one exception, got \(all.count)")
+        check(!all.contains { $0.start == date(2026, 9, 11, 10, 30) }, "exception removed")
+        check(all.contains { $0.start == date(2026, 11, 2, 10, 30) }, "10:30 local after the Nov 1 DST change")
+        check(all.last?.start == date(2026, 12, 7, 10, 30), "last meeting Mon Dec 7, got \(String(describing: all.last?.start))")
+
+        let readingWeek = DashEvent(id: "rw", title: "Reading week", kind: .holiday,
+                                    start: date(2026, 10, 10), end: date(2026, 10, 19), isAllDay: true,
+                                    timeZoneID: "America/Toronto", cancelsClasses: true)
+        let quiz = Assessment(courseCode: "MATH 137", title: "Quiz 4", kind: .quiz, due: date(2026, 10, 19, 17, 30))
+        let deadline = Assessment(courseCode: "MATH 135", title: "A5", kind: .assignment, due: date(2026, 10, 14, 16, 5))
+        let items = RecurrenceExpander.agenda(events: [lecture, readingWeek], assessments: [quiz, deadline], in: term)
+        let lectures = items.filter { $0.kind == .lecture }
+        check(lectures.count == 35, "reading week cancels 3 lectures (Oct 12, 14, 16), got \(lectures.count)")
+        check(items.contains { $0.title == "A5" }, "deadlines survive reading week")
+        check(items.contains { $0.title == "Quiz 4" && $0.end == date(2026, 10, 19, 18, 20) }, "quiz gets a 50-minute block")
+
+        let counted = DashEvent(id: "c", title: "OH", kind: .officeHours, start: date(2026, 9, 15, 14), end: date(2026, 9, 15, 15),
+                                recurrence: Recurrence(frequency: .weekly, interval: 1, count: 3, until: nil, weekdays: []))
+        check(RecurrenceExpander.occurrences(of: counted, in: term).count == 3, "COUNT=3")
+    }
+
+    // MARK: - Grades
+
+    static func grades() {
+        let quizzes = UUID(), midterm = UUID(), final = UUID()
+        func item(_ p: Double?, whatIf: Double? = nil) -> GradeEngine.ItemInput {
+            GradeEngine.ItemInput(id: UUID(), title: "x", due: nil, percent: p, whatIf: whatIf)
+        }
+        var course = GradeEngine.CourseInput(code: "MATH 137", units: 0.5, components: [
+            .init(id: quizzes, name: "Quizzes", weight: 20, dropLowest: 1, expectedCount: 10, isExam: false,
+                  items: [item(90), item(80)]),
+            .init(id: midterm, name: "Midterm", weight: 30, dropLowest: 0, expectedCount: 1, isExam: true, items: []),
+            .init(id: final, name: "Final", weight: 50, dropLowest: 0, expectedCount: 1, isExam: true, items: []),
+        ], rules: [])
+        let params = GradeEngine.Parameters(target: 80, examGap: 8)
+
+        var r = GradeEngine.evaluate(course, parameters: params)
+        check(near(r.current, 85), "current = mean of two quizzes, got \(String(describing: r.current))")
+        // Floor: two quiz marks over 9 kept slots, ×20%.
+        check(near(r.floor, (90 + 80) / 9.0 * 0.2), "floor, got \(r.floor)")
+        // Ceiling: eight 100s plus the 90; the 80 is the dropped quiz.
+        check(near(r.ceiling, (800 + 90) / 9.0 * 0.2 + 80), "ceiling, got \(r.ceiling)")
+        // Projection: unwritten quizzes at 85 (the 80 drops), exams at 85 − 8 = 77.
+        check(near(r.projected, (90 + 8 * 85) / 9.0 * 0.2 + 77 * 0.8), "projected with exam gap, got \(String(describing: r.projected))")
+        if case let .needs(x) = r.requirement {
+            // Solve 0.2·(170 + 7x)/9 + 0.8x = 80.
+            let expected = (80 - 0.2 * 170 / 9) / (0.2 * 7 / 9 + 0.8)
+            check(abs(x - expected) < 0.01, "required uniform score \(x) vs \(expected)")
+        } else {
+            check(false, "expected a requirement, got \(r.requirement)")
+        }
+
+        // Final replaces midterm when better.
+        course.components[1].items = [item(60)]
+        course.components[2].items = [item(90)]
+        course.rules = [.replaceIfBetter(target: midterm, with: final)]
+        r = GradeEngine.evaluate(course, parameters: params)
+        check(near(r.floor, (90 + 80) / 9.0 * 0.2 + 90 * 0.3 + 90 * 0.5), "replacement lifts the midterm to 90")
+
+        // Must pass exams: exam average 40 caps the grade at 40.
+        course.rules = [.mustPass(components: [midterm, final], threshold: 50)]
+        course.components[1].items = [item(40)]
+        course.components[2].items = [item(40)]
+        course.components[0].items = (0..<10).map { _ in item(100) }
+        r = GradeEngine.evaluate(course, parameters: params)
+        check(near(r.floor, 40), "exam-pass rule caps at the exam average, got \(r.floor)")
+        check(r.requirement == .noRemainingWork, "everything marked")
+
+        // Drop lowest only once there are more marks than kept slots.
+        let dropCourse = GradeEngine.CourseInput(code: "X", units: 0.5, components: [
+            .init(id: UUID(), name: "Q", weight: 100, dropLowest: 1, expectedCount: 3, isExam: false,
+                  items: [item(100), item(50), item(0)]),
+        ], rules: [])
+        check(near(GradeEngine.evaluate(dropCourse, parameters: params).floor, 75), "best 2 of 3")
+
+        // Term: unit-weighted, rounded course grades.
+        let a = GradeEngine.CourseInput(code: "A", units: 0.5, components: [
+            .init(id: UUID(), name: "All", weight: 100, dropLowest: 0, expectedCount: 1, isExam: false, items: [item(79.5)])], rules: [])
+        let b = GradeEngine.CourseInput(code: "B", units: 0.5, components: [
+            .init(id: UUID(), name: "All", weight: 100, dropLowest: 0, expectedCount: 1, isExam: false, items: [item(80.4)])], rules: [])
+        let term = GradeEngine.evaluateTerm([a, b], parameters: params)
+        check(near(term.projected, 80), "79.5 and 80.4 round to 80 and 80, got \(String(describing: term.projected))")
+        check(term.requiredOnRemaining == .secured || term.requiredOnRemaining == .noRemainingWork, "nothing left to do")
+
+        let cumulative = GradeEngine.evaluateTerm([a], parameters: params, previousUnits: 2.5, previousAverage: 86)
+        check(near(cumulative.cumulativeProjected, (86 * 2.5 + 80 * 0.5) / 3), "cumulative blends previous terms")
+
+        let leverage = GradeEngine.leverage([course], totalUnits: 2.5)
+        check(leverage.isEmpty, "all graded → no leverage items")
+    }
+
+    // MARK: - Quick capture
+
+    static func capture() {
+        let now = date(2026, 9, 29, 9, 0)  // Tuesday morning
+        let known = ["CS 135", "MATH 135", "MATH 137"]
+
+        var r = QuickCaptureParser.parse("CS 135 OH Tue 2-3pm MC 4065 weekly until Dec 4", now: now, knownCourses: known)
+        check(r.courseCode == "CS 135" && r.kind == .officeHours, "OH kind, got \(r.kind)")
+        check(r.start == date(2026, 9, 29, 14) && r.end == date(2026, 9, 29, 15), "today 2–3 PM, got \(String(describing: r.start))")
+        check(r.location == "MC 4065", "building room, got \(r.location ?? "nil")")
+        check(r.recurrence?.weekdays == [3] && r.recurrence?.until == date(2026, 12, 4, 23, 59), "weekly until Dec 4")
+
+        r = QuickCaptureParser.parse("math137 quiz 4 oct 19 5:30pm", now: now, knownCourses: known)
+        check(r.courseCode == "MATH 137" && r.kind == .quiz && r.title == "Quiz 4", "quiz 4, got \(r.title)")
+        check(r.start == date(2026, 10, 19, 17, 30), "Oct 19 5:30 PM")
+
+        r = QuickCaptureParser.parse("A4 due fri 11:59pm", now: now, knownCourses: known)
+        check(r.kind == .assignment && r.title == "Assignment 4", "A4, got \(r.kind) \(r.title)")
+        check(r.start == date(2026, 10, 2, 23, 59) && r.start == r.end, "Friday 11:59 PM point deadline")
+
+        r = QuickCaptureParser.parse("hack the north info session tomorrow 6pm @ SLC Great Hall", now: now, knownCourses: known)
+        check(r.kind == .event && r.start == date(2026, 9, 30, 18), "tomorrow 6 PM event, got \(String(describing: r.start))")
+        check(r.title.lowercased().contains("hack the north"), "title kept, got \(r.title)")
+
+        r = QuickCaptureParser.parse("MATH 135 midterm 2026-10-21 7-8:50pm", now: now, knownCourses: known)
+        check(r.kind == .test && r.start == date(2026, 10, 21, 19) && r.end == date(2026, 10, 21, 20, 50), "ISO date + range")
+
+        r = QuickCaptureParser.parse("tue 9am study group", now: now, knownCourses: known)
+        check(r.start == date(2026, 10, 6, 9), "Tuesday 9 AM already passed today → next week, got \(String(describing: r.start))")
+    }
+
+    // MARK: - ICS
+
+    static func ics() {
+        let text = """
+        BEGIN:VCALENDAR
+        BEGIN:VEVENT
+        UID:abc
+        SUMMARY:CS 135 LEC 002
+        LOCATION:MC 2065
+        DTSTART;TZID=America/Toronto:20260910T083000
+        DTEND;TZID=America/Toronto:20260910T095000
+        RRULE:FREQ=WEEKLY;UNTIL=20261208T235900;BYDAY=TU,TH
+        EXDATE;TZID=America/Toronto:20261013T083000
+        END:VEVENT
+        END:VCALENDAR
+        """
+        guard let events = try? ICSParser.parse(text) else { check(false, "ics parse"); return }
+        check(events.count == 1 && events[0].recurrence?.weekdays == [3, 5], "TU,TH")
+        let imported = ICSImport.events(from: events, sourceID: nil, knownCourses: ["CS 135"])
+        check(imported.first?.courseCode == "CS 135" && imported.first?.kind == .lecture, "course + kind from summary")
+        let count = imported.first.map { RecurrenceExpander.occurrences(of: $0, in: DateInterval(start: date(2026, 9, 1), end: date(2027, 1, 1))).count }
+        check(count == 25, "Sep 10–Dec 8 TuTh is 26 meetings minus one EXDATE, got \(String(describing: count))")
+    }
+
+    // MARK: - Study prompt
+
+    static func studyPrompt() {
+        let map = [
+            NotesSection(section: "1.3", title: "Arithmetic rules for limits", page: 51, problemsPage: 55),
+            NotesSection(section: "1.4", title: "Squeeze Theorem", page: 59, problemsPage: 61),
+            NotesSection(section: "1.5", title: "Recursive sequences", page: 63),
+            NotesSection(section: "2.1", title: "Introduction to function limits", page: 74),
+            NotesSection(section: "2.2", title: "Sequential characterization of limits", page: 80),
+            NotesSection(section: "2.10", title: "Intermediate Value Theorem", page: 126),
+        ]
+        let covered = StudyPrompt.sections(for: "1.4–1.5, 2.1", in: map)
+        check(covered.map(\.section) == ["1.4", "1.5", "2.1"], "coverage expands ranges, got \(covered.map(\.section))")
+        check(StudyPrompt.sections(for: "2.2–2.10", in: map).map(\.section) == ["2.2", "2.10"], "2.10 sorts after 2.2")
+
+        var course = Course(code: "MATH 137", title: "Calculus 1", folderPath: "/tmp/Math137")
+        course.pageMap = map
+        course.notesFile = "MATH_137.pdf"
+        course.studyLinks = [StudyLink(title: "MATH 137 Quiz Prep", url: "https://claude.ai/artifact/abc")]
+        let quiz = Assessment(courseCode: "MATH 137", title: "Quiz 3", kind: .quiz, due: date(2026, 10, 5, 17, 30), coverage: "1.4–1.5, 2.1")
+        let prompt = StudyPrompt(course: course, sections: covered, assessment: quiz, classesRoot: "/Users/x/UW Classes")
+        let ranges = prompt.pageRanges()
+        check(ranges.map(\.1) == [59...62, 63...73, 74...79], "page ranges end before the next section, got \(ranges.map(\.1))")
+        let text = prompt.text
+        check(text.hasPrefix("Use the quiz-prep skill to build a study page for MATH 137 Quiz 3"), "prompt names the skill and assessment")
+        check(text.contains("Math137/CLAUDE.md") && text.contains("Math137/MATH_137.pdf"), "prompt points at the course files")
+        check(text.contains("§1.4 Squeeze Theorem (pp. 59–62, problems p. 61)"), "section line with pages")
+        check(text.contains("https://claude.ai/artifact/abc"), "extends the existing page")
+        check(!text.contains("strict rule"), "no teach-don't-answer rule for 137")
+        course.teachDontAnswer = true
+        check(StudyPrompt(course: course, sections: covered, assessment: quiz, classesRoot: "/x").text.contains("strict rule"), "135-style rule included")
+        check(prompt.terminalCommand.hasPrefix("cd \"/Users/x/UW Classes\" && claude '"), "terminal command quotes the folder")
+    }
+
+    // MARK: - Real course folders (smoke test, informational)
+
+    static func realFolders() {
+        let root = URL(fileURLWithPath: NSString(string: "~/Documents/University of Waterloo Classes").expandingTildeInPath)
+        guard let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) else { return }
+        for folder in folders.sorted(by: { $0.path < $1.path }) {
+            let file = folder.appendingPathComponent("CLAUDE.md")
+            guard let text = try? String(contentsOf: file, encoding: .utf8) else { continue }
+            let parsed = CourseFolderParser.parse(markdown: text, fallbackYear: 2026)
+            let dated = parsed.rows.filter { $0.due != nil }.count
+            print("  · \(folder.lastPathComponent): \(parsed.code ?? "?") — \(parsed.rows.count) rows (\(dated) dated), \(parsed.components.count) components, \(parsed.pageMap.count) sections, \(parsed.studyLinks.count) study links\(parsed.teachDontAnswer ? ", teach-don't-answer" : "")")
+        }
+    }
+}
