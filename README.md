@@ -1,14 +1,78 @@
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="WatDash on a Mac and an iPhone" width="100%">
+</p>
+
 # WatDash
 
 A native dashboard for a University of Waterloo term, on Mac, iPhone and
-iPad: every class,
-deadline, quiz and office hour in one place, a grade engine that tracks the
-**80% cumulative average** a sixth course needs, and study pages made by Claude
-Code from your own course folders. Almost nothing is typed by hand.
+iPad: every class, deadline, quiz and office hour in one place, a grade engine
+that tracks the **80% cumulative average** a sixth course needs, and study
+pages made by Claude Code from your own course folders. Almost nothing is
+typed by hand.
 
-Companion to [WatAlarm](../WatAlarm) (iOS alarms before class). Same
-conventions: generated Xcode project, a hand-rolled RFC 5545 parser, and pure
-logic verified by plain `swiftc` checks.
+![Platforms](https://img.shields.io/badge/platforms-macOS%2026%20%7C%20iOS%2026%20%7C%20iPadOS%2026-0A84FF)
+![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138)
+![Dependencies](https://img.shields.io/badge/dependencies-none-34C759)
+
+Companion to WatAlarm (iOS alarms before class). Same conventions: generated
+Xcode project, a hand-rolled RFC 5545 parser, and pure logic verified by plain
+`swiftc` checks.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/mac-today.png" alt="Today on the Mac: the Focus card and the rest of the day">
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/mac-schedule.png" alt="Schedule week grid"></td>
+    <td width="50%"><img src="docs/screenshots/mac-grades.png" alt="Grades: projected term average"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Schedule</b>: week grid with a live "now" line</td>
+    <td align="center"><b>Grades</b>: projected average against the 80% target</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/mac-deadlines.png" alt="Deadlines list"></td>
+    <td width="50%"><img src="docs/screenshots/mac-course.png" alt="Course page with grading scheme"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Deadlines</b>: seats on Odyssey and study prompts</td>
+    <td align="center"><b>Course</b>: grading scheme and per-item what-ifs</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/iphone-today.png" width="24%" alt="iPhone: Today">
+  <img src="docs/screenshots/iphone-schedule.png" width="24%" alt="iPhone: Schedule">
+  <img src="docs/screenshots/iphone-deadlines.png" width="24%" alt="iPhone: Deadlines">
+  <img src="docs/screenshots/iphone-grades.png" width="24%" alt="iPhone: Grades">
+</p>
+<p align="center">
+  <img src="docs/screenshots/ipad-today.png" width="48%" alt="iPad: Today with the sidebar">
+  <img src="docs/screenshots/ipad-grades.png" width="48%" alt="iPad: Grades">
+</p>
+
+<sub>All screenshots use the built-in sample term (`-WatDashDemo`), not real
+marks. The Mac shots come from the debug snapshotter, which can't draw the
+translucent sidebar, so they're cropped to the content area.</sub>
+
+## Highlights
+
+- **One multiplatform SwiftUI target** for Mac, iPhone and iPad: sidebar and
+  detail on Mac and iPad, tabs and stacked rows on iPhone.
+- **A grade engine that works in Waterloo averages**, not GPA: whole-number
+  rounding, drop-lowest, "final replaces midterm", exemptions, a projected
+  range and the chance of clearing 80%.
+- **Hand-written parsers** for RFC 5545 iCalendar (with recurrence), Quest
+  schedules, course outlines and plain-English quick capture, all pure
+  functions checked by `Tests/Checks.swift`.
+- **One store, many projections**: every change fans out to WidgetKit
+  widgets, notifications and an Apple Calendar export keyed by deterministic
+  ids.
+- **Mac extras**: a menu bar line ranked by urgency, a ⌃⌥Space quick-capture
+  panel from any app, and App Intents for Siri, Shortcuts and Spotlight.
 
 ---
 
