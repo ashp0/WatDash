@@ -13,6 +13,7 @@ typed by hand.
 ![Platforms](https://img.shields.io/badge/platforms-macOS%2026%20%7C%20iOS%2026%20%7C%20iPadOS%2026-0A84FF)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-34C759)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 Companion to WatAlarm (iOS alarms before class). Same conventions: generated
 Xcode project, a hand-rolled RFC 5545 parser, and pure logic verified by plain
@@ -291,3 +292,7 @@ Support). API keys live in the Keychain. A scratch store (`-WatDashStore`)
 never touches the widgets, reminders or Apple Calendar, which it would
 otherwise share with the installed app. The same flags work on a simulator:
 `xcrun simctl launch booted com.ashwinpaudel.WatDash -WatDashDemo`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
