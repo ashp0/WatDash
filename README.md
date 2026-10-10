@@ -91,7 +91,8 @@ translucent sidebar, so they're cropped to the content area.</sub>
 
 Plus: a **menu bar** line (below) with a panel of what's due soon and what's
 left of the day plus a capture field, **⌃⌥Space quick capture** from any app, **desktop widgets**, **Shortcuts/Siri/Spotlight actions**, deadline **notifications**,
-and optional **Apple Calendar** sync.
+optional **Apple Calendar** sync, and a two-way sync with **Syllabus on an
+OS X 10.9 Mac** through a git repository (see [The Mac Pro](#the-mac-pro)).
 
 ### iPhone and iPad
 
@@ -140,7 +141,7 @@ never deleted by an import.
 
 | Source | Gives you | Notes |
 |---|---|---|
-| **Course folders** | Assessments with dates, coverage, rooms and posted marks, grading scheme, weekly office hours, notes page map, study pages, notes PDF, reading week, the course's help rules and accent colour | Reads each `<Course>/CLAUDE.md` under `~/Documents/University of Waterloo Classes` (format below). A saved outline in the folder adds class times for the sections you pick. |
+| **Course folders** | Assessments with dates, coverage, rooms and posted marks, grading scheme, weekly office hours, notes page map, study pages, notes PDF, reading week, the course's help rules and accent colour | Reads each `<Course>/CLAUDE.md` under `~/Documents/University of Waterloo Classes` (format below). A saved outline in the folder adds class times for the sections you pick. On the Mac, an edit to any course's `CLAUDE.md` is re-read within a few seconds, without a click. |
 | **Quest schedule** | Your actual class meetings | Copy Quest → Enroll → My Class Schedule → List View and paste; or use that page's *Download Schedule* `.ics`. |
 | **Calendar file / feed** | Anything iCalendar | Feeds refresh on a timer. LEARN's Calendar → Subscribe feed and public Google office-hour calendars both work. A UW Flow schedule export (uwflow.com → Schedule → export) gives every lecture, tutorial and test slot; open the `.ics` with WatDash. |
 | **Course outline** | Every section's times plus the assessment table | Save the outline.uwaterloo.ca page as HTML. |
@@ -165,6 +166,78 @@ Timetable test slots (UW Flow and Quest `TST`) are hidden where the course's own
 
 Holidays and reading week cancel **class meetings** and office hours only.
 Deadlines during reading week still stand.
+
+## The Mac Pro
+
+A 2013 Mac Pro on OS X 10.9 runs **Syllabus**
+(`~/Documents/Mavericks Projects/Syllabus`), which shows this calendar with
+no browser and no modern HTTPS. The two talk through the classes folder's
+private GitHub repository: WatDash writes the calendar there, already worked
+out, and the Mac Pro writes back small notes. Turn it on in Settings →
+Calendar → Mac Pro; the same section shows "Mac Pro sync: last pushed …" or
+what went wrong, and has Sync Now.
+
+- **Its own clone.** WatDash works in a clone of its own, in
+  `~/Library/Application Support/WatDash/MacPro/Study`, made from the classes
+  folder's `origin` remote (Settings can name another). Your working copy of
+  the classes folder, and anything uncommitted in it, is never touched.
+- **What it may change.** It writes `Calendar/watdash.json` and deletes notes
+  in `Inbox/`. Every commit is checked before it's pushed, and anything else
+  is refused.
+- **When.** A few seconds after the store changes (including a course
+  `CLAUDE.md` being edited, which the folder watcher re-reads), every five
+  minutes, and after the Mac wakes. Each pass pulls with rebase, applies the
+  notes, writes the export if anything changed, commits as "WatDash
+  (MacBook)", and pushes, rebasing again if the Mac Pro pushed meanwhile.
+- **Safely.** git runs with no terminal and nothing that can prompt, in its
+  own process group, killed after a timeout. Offline, a pass fails quietly,
+  says so in Settings, and the next one catches up. A note applied before a
+  push failed is remembered, so it is never applied twice.
+- Only the real store syncs: never the sample term or a scratch file.
+
+### `Calendar/watdash.json`, version 1
+
+One JSON object; keys sorted, so the same calendar is the same bytes.
+Times are Waterloo wall-clock strings (`"2026-10-19 17:30"`), days are
+`"2026-10-19"`. It covers the Monday a week back to the end of exams.
+
+| Key | What |
+|---|---|
+| `format`, `version` | `"watdash-calendar"`, `1`. A reader refuses a newer major version. |
+| `exported` | When this content was first written. Unchanged content keeps its time. |
+| `timeZone`, `term`, `from`, `to` | `America/Toronto`, the term's name, the first and last day covered. |
+| `officeHours` | Whether office hours are in it (WatDash's office-hours switch). |
+| `courses[]` | `code`, `title`, `color` (`#RRGGBB`), `folder` (in the repository, e.g. `Math137`), `notesFile` (e.g. `Math137/MATH_137.pdf`). |
+| `classes[]` | Every class meeting, office hour and event as a dated occurrence, with holidays, reading week, skipped lectures and replaced test slots already applied: `id`, `course`, `title`, `kind`, `start`, `end`, `room`. |
+| `allDay[]` | All-day items (reading week, holidays): `id`, `course`, `title`, `kind`, `first`, `last` (inclusive). |
+| `deadlines[]` | Quizzes, tests, exams, assignments and deadlines: `id`, `course`, `title`, `kind`, `due` (missing when TBA), `end` (the writing window; missing for a point in time), `covers`, `room`, `seat`, `detail`, `done`, `canTick`, `seated` (Odyssey has the seat), `sections[]` (`section`, `title`, `page`: the notes sections it covers, from the course's page map). |
+| `notes[]` | The last 30 days of notes from the Mac Pro: `file`, `note`, `result` (`applied`, `inbox`, `unknown`, `failed`, `unreadable`), `message`, `when`. |
+
+Ids are WatDash's own and stable: `<event id>@<start in Unix seconds>` for an
+occurrence, `assessment:<uuid>` for an assessment, the same in every export
+until the item itself is deleted. Only `assessment:` deadlines can be ticked
+(`canTick`); a marked one can't be unticked.
+
+A change that would break a reader bumps `version`; adding a key doesn't.
+
+### `Inbox/`: notes from the Mac Pro
+
+One note per file, `Inbox/<date>-<time>-<random>.txt`, added and never
+edited by the Mac Pro:
+
+```
+done: assessment:6F1D2C4A-…
+written: 2026-10-10 14:03
+from: Syllabus on the Mac Pro
+```
+
+| Note | WatDash does |
+|---|---|
+| `capture: <one line>` | Quick capture, exactly as typed into the capture panel (with the on-device model when it's on). "Tomorrow" counts from `written:`. An unsure one waits in the inbox as usual. |
+| `done: <id>`, `undone: <id>` | Ticks or unticks that assessment. |
+
+Then it deletes the file and reports the result in the next export's
+`notes`, which is how the Mac Pro knows a tick it sent has landed.
 
 ## The grade engine
 
@@ -196,7 +269,8 @@ Sources ──► Importers (pure parsers) ──► AppStore (one JSON file) �
             ICSParser, QuestSchedule-     canonical store:            SnapshotWriter → widgets
             Parser, OutlineParser,        courses, events,            NotificationScheduler
             CourseFolderParser,           assessments, sources,       CalendarSync (EventKit)
-            QuickCaptureParser            settings                    views, menu bar, intents
+            QuickCaptureParser            settings                    MacProSync (git → Syllabus)
+                                                                      views, menu bar, intents
                                                │
                                      RecurrenceExpander, GradeEngine (pure)
 ```
@@ -284,7 +358,11 @@ WatDash.app/Contents/MacOS/WatDash -WatDashDemo                      # sample te
 WatDash.app/Contents/MacOS/WatDash -WatDashStore scratch             # any scratch data file
 WatDash.app/Contents/MacOS/WatDash -WatDashStore scratch -WatDashScanFolders
 WatDash.app/Contents/MacOS/WatDash -WatDashDemo -WatDashSnapshot /tmp/shots   # PNG of every screen, then quit
+WatDash.app/Contents/MacOS/WatDash -WatDashDemo -WatDashStore rt -WatDashMacProTest <repo> <clone>   # one Mac Pro sync, then quit
 ```
+
+The last is the WatDash half of Syllabus's `make roundtrip`: one sync pass
+against a local repository, with a scratch store.
 
 Data lives in `~/Library/Application Support/WatDash/watdash.json`, with a
 rolling daily backup next to it (on iOS, in the app's own Application

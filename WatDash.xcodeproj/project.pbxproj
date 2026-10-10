@@ -32,9 +32,14 @@
 		277E0003E283EBC0DA13FC28 /* CalendarSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */; };
 		DDFCFFD9AE143C2A9F25FBF2 /* DemoSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */; };
 		04DA2D403438067C44590ECA /* Focus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A410F54EADB1E546E322F6 /* Focus.swift */; };
+		61B25FD79F78545976BCCBDE /* FolderWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E16F7AAC838DE89F7C64168 /* FolderWatcher.swift */; };
 		22A4C3169F3EA86BFEDD6D8E /* GradeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D509ED70F77A2FB0E333D33F /* GradeEngine.swift */; };
 		6359A08DC8AB393101C1ABC1 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D003EE1A7F95C6109BA110 /* HotKey.swift */; };
 		D1A3F4218C23796C4D2DB464 /* ImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31285FF4EE391F8A88D877A1 /* ImportService.swift */; };
+		056ED29D41D19C39294502E8 /* MacProExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B04F1A89081AA5C963A1C /* MacProExport.swift */; };
+		D375A29F881B9412D05840C3 /* MacProInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0092551FFC0A029D27B083 /* MacProInbox.swift */; };
+		BF87CDC556E728E1A8FC3F69 /* MacProRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836018C26BB528275F6E674C /* MacProRepo.swift */; };
+		E127873166D8EE9764F3A48D /* MacProSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95068017D80017FA5F58DC5 /* MacProSync.swift */; };
 		F09F06305E20F7CF95257AAF /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FA7A0AC8EDA59CB0F552D3A /* MenuBarStatus.swift */; };
 		67E54E9D5172BACFBDD070EE /* OpenDataClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */; };
 		D194DA28D71ABB0422F82F15 /* Projections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E0363D79AF578B018591CC /* Projections.swift */; };
@@ -121,9 +126,14 @@
 		9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CalendarSync.swift"; sourceTree = "<group>"; };
 		21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DemoSeeder.swift"; sourceTree = "<group>"; };
 		56A410F54EADB1E546E322F6 /* Focus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Focus.swift"; sourceTree = "<group>"; };
+		9E16F7AAC838DE89F7C64168 /* FolderWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FolderWatcher.swift"; sourceTree = "<group>"; };
 		D509ED70F77A2FB0E333D33F /* GradeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GradeEngine.swift"; sourceTree = "<group>"; };
 		00D003EE1A7F95C6109BA110 /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HotKey.swift"; sourceTree = "<group>"; };
 		31285FF4EE391F8A88D877A1 /* ImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportService.swift"; sourceTree = "<group>"; };
+		830B04F1A89081AA5C963A1C /* MacProExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacProExport.swift"; sourceTree = "<group>"; };
+		8A0092551FFC0A029D27B083 /* MacProInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacProInbox.swift"; sourceTree = "<group>"; };
+		836018C26BB528275F6E674C /* MacProRepo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacProRepo.swift"; sourceTree = "<group>"; };
+		D95068017D80017FA5F58DC5 /* MacProSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacProSync.swift"; sourceTree = "<group>"; };
 		9FA7A0AC8EDA59CB0F552D3A /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarStatus.swift"; sourceTree = "<group>"; };
 		124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenDataClient.swift"; sourceTree = "<group>"; };
 		32E0363D79AF578B018591CC /* Projections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Projections.swift"; sourceTree = "<group>"; };
@@ -266,9 +276,14 @@
 				9B54D39111AA7D4D97D65CC1 /* CalendarSync.swift */,
 				21FB2E2A03CD2738F93D6013 /* DemoSeeder.swift */,
 				56A410F54EADB1E546E322F6 /* Focus.swift */,
+				9E16F7AAC838DE89F7C64168 /* FolderWatcher.swift */,
 				D509ED70F77A2FB0E333D33F /* GradeEngine.swift */,
 				00D003EE1A7F95C6109BA110 /* HotKey.swift */,
 				31285FF4EE391F8A88D877A1 /* ImportService.swift */,
+				830B04F1A89081AA5C963A1C /* MacProExport.swift */,
+				8A0092551FFC0A029D27B083 /* MacProInbox.swift */,
+				836018C26BB528275F6E674C /* MacProRepo.swift */,
+				D95068017D80017FA5F58DC5 /* MacProSync.swift */,
 				9FA7A0AC8EDA59CB0F552D3A /* MenuBarStatus.swift */,
 				124A1DD9E68FFE1791BD7AF8 /* OpenDataClient.swift */,
 				32E0363D79AF578B018591CC /* Projections.swift */,
@@ -456,9 +471,14 @@
 				277E0003E283EBC0DA13FC28 /* CalendarSync.swift in Sources */,
 				DDFCFFD9AE143C2A9F25FBF2 /* DemoSeeder.swift in Sources */,
 				04DA2D403438067C44590ECA /* Focus.swift in Sources */,
+				61B25FD79F78545976BCCBDE /* FolderWatcher.swift in Sources */,
 				22A4C3169F3EA86BFEDD6D8E /* GradeEngine.swift in Sources */,
 				6359A08DC8AB393101C1ABC1 /* HotKey.swift in Sources */,
 				D1A3F4218C23796C4D2DB464 /* ImportService.swift in Sources */,
+				056ED29D41D19C39294502E8 /* MacProExport.swift in Sources */,
+				D375A29F881B9412D05840C3 /* MacProInbox.swift in Sources */,
+				BF87CDC556E728E1A8FC3F69 /* MacProRepo.swift in Sources */,
+				E127873166D8EE9764F3A48D /* MacProSync.swift in Sources */,
 				F09F06305E20F7CF95257AAF /* MenuBarStatus.swift in Sources */,
 				67E54E9D5172BACFBDD070EE /* OpenDataClient.swift in Sources */,
 				D194DA28D71ABB0422F82F15 /* Projections.swift in Sources */,

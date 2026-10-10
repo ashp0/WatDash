@@ -457,19 +457,34 @@ final class ImportService {
 
     // MARK: - Quick capture
 
+    /// What became of a capture.
+    enum CaptureOutcome {
+        case added
+        /// Saved as a proposal, waiting in the inbox to be confirmed.
+        case proposed
+        /// Nothing was added: no date could be found.
+        case undated
+    }
+
     /// Adds a parsed capture. Confident, dated captures go straight in; the
     /// rest land in the inbox as proposals.
     @discardableResult
     func add(_ capture: CaptureResult, forceConfirm: Bool = false) -> String {
+        addReporting(capture, forceConfirm: forceConfirm).message
+    }
+
+    /// `add`, also saying what happened (the Mac Pro's notes report it back).
+    @discardableResult
+    func addReporting(_ capture: CaptureResult, forceConfirm: Bool = false) -> (message: String, outcome: CaptureOutcome) {
         let source = store.sources.first { $0.kind == .quickCapture }
             ?? store.addSource(DataSource(kind: .quickCapture, name: "Quick capture"))
         if capture.isAssessment, let code = capture.courseCode, let due = capture.start {
             store.addAssessment(Assessment(courseCode: code, title: capture.title, kind: capture.kind, due: due,
                                            end: capture.end, location: capture.location, sourceID: source.id))
-            return "Added \(code) \(capture.title) — \(due.dayMonth), \(due.shortTime)"
+            return ("Added \(code) \(capture.title) — \(due.dayMonth), \(due.shortTime)", .added)
         }
         guard let start = capture.start else {
-            return "Couldn't find a date in that. Try “tue 2pm” or “oct 19”."
+            return ("Couldn't find a date in that. Try “tue 2pm” or “oct 19”.", .undated)
         }
         let proposed = !forceConfirm && capture.confidence < 0.45
         store.addEvent(DashEvent(
@@ -480,7 +495,8 @@ final class ImportService {
             timeZoneID: TimeZone.current.identifier, sourceID: source.id,
             status: proposed ? .proposed : .confirmed
         ))
-        return proposed ? "Saved to the inbox to confirm: \(capture.title)" : "Added \(capture.title) — \(start.dayMonth), \(start.shortTime)"
+        return proposed ? ("Saved to the inbox to confirm: \(capture.title)", .proposed)
+                        : ("Added \(capture.title) — \(start.dayMonth), \(start.shortTime)", .added)
     }
 
     // MARK: - Refresh loop
@@ -504,16 +520,28 @@ final class ImportService {
             case .appleCalendar:
                 CalendarSync.shared.importEvents(source: source, into: store)
             case .courseFolder:
-                if let path = source.location {
-                    let folder = URL(fileURLWithPath: path)
-                    let scans = scanCourseFolders(root: folder.deletingLastPathComponent()).filter { $0.folder.path == folder.path }
-                    if !scans.isEmpty { _ = importCourseFolders(scans, includeSelfStudy: true) }
-                }
+                refreshCourseFolder(source)
             default:
                 break
             }
         }
         await checkSeats()
+    }
+
+    /// Re-reads every course folder WatDash already imports. The folder
+    /// watcher calls this when a course's CLAUDE.md changes, so an edit
+    /// reaches the store (and everything that follows from it) on its own.
+    func refreshCourseFolders() {
+        for source in store.sources where source.isEnabled && source.kind == .courseFolder {
+            refreshCourseFolder(source)
+        }
+    }
+
+    private func refreshCourseFolder(_ source: DataSource) {
+        guard let path = source.location else { return }
+        let folder = URL(fileURLWithPath: path)
+        let scans = scanCourseFolders(root: folder.deletingLastPathComponent()).filter { $0.folder.path == folder.path }
+        if !scans.isEmpty { _ = importCourseFolders(scans, includeSelfStudy: true) }
     }
 
     // MARK: - Helpers

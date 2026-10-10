@@ -60,6 +60,12 @@ struct AppSettings: Codable, Hashable, Sendable {
     var exportDeadlines: Bool = true
     var exportedCalendarIDs: [String: String] = [:]
 
+    // Mac Pro (Syllabus on OS X 10.9), through the classes repository
+    var macProSync: Bool = false
+    /// The repository to sync through; empty means the classes folder's own
+    /// `origin` remote.
+    var macProRemote: String = ""
+
     // Notifications
     var notifyDeadlines: Bool = true
     var deadlineLeadHours: [Double] = [24, 2]
@@ -96,6 +102,8 @@ struct AppSettings: Codable, Hashable, Sendable {
         exportClasses = value(.exportClasses, defaults.exportClasses)
         exportDeadlines = value(.exportDeadlines, defaults.exportDeadlines)
         exportedCalendarIDs = value(.exportedCalendarIDs, defaults.exportedCalendarIDs)
+        macProSync = value(.macProSync, defaults.macProSync)
+        macProRemote = value(.macProRemote, defaults.macProRemote)
         notifyDeadlines = value(.notifyDeadlines, defaults.notifyDeadlines)
         deadlineLeadHours = value(.deadlineLeadHours, defaults.deadlineLeadHours)
         notifyClasses = value(.notifyClasses, defaults.notifyClasses)

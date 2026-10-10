@@ -22,12 +22,26 @@ enum AppLaunch {
         }
 
         // Projections: every commit (debounced) refreshes these.
-        store.effects = isolated ? [] : [
+        var effects: [(AppStore) -> Void] = [
             { SnapshotWriter.write(from: $0) },
             { NotificationScheduler.shared.reconcile(store: $0) },
             { CalendarSync.shared.scheduleExport($0) },
         ]
+        #if os(macOS)
+        // The Mac Pro gets the real term only, never the sample one.
+        let syncsMacPro = !isolated && !store.isDemo
+        if syncsMacPro {
+            effects.append { MacProSync.shared.storeChanged($0) }
+            effects.append { store in
+                FolderWatcher.shared.watch(store.settings.classesFolderPath) { ImportService.shared.refreshCourseFolders() }
+            }
+        }
+        #endif
+        store.effects = isolated ? [] : effects
         store.runEffectsNow()
+        #if os(macOS)
+        if syncsMacPro { MacProSync.shared.start(store: store) }
+        #endif
 
         if (store.settings.notifyDeadlines || store.settings.notifyClasses) && !isolated {
             Task { await NotificationScheduler.shared.requestAuthorization() }
@@ -103,6 +117,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let index = arguments.firstIndex(of: "-WatDashSnapshot"), index + 1 < arguments.count {
             WindowSnapshotter.run(outputDirectory: URL(fileURLWithPath: arguments[index + 1]))
+        }
+        // The Mac Pro round trip (Syllabus's `make roundtrip`): one sync
+        // against a local repository, with a scratch store, then quit.
+        if let index = arguments.firstIndex(of: "-WatDashMacProTest"), index + 2 < arguments.count, store.isScratch {
+            MacProSync.shared.runOnceForTest(store: store, remote: arguments[index + 1],
+                                             clone: URL(fileURLWithPath: arguments[index + 2])) { result in
+                store.saveNow()
+                FileHandle.standardError.write(Data("macpro: \(result)\n".utf8))
+                exit(result.hasPrefix("ok") ? 0 : 1)
+            }
         }
         #endif
         Log.lifecycle.info("Launched with \(store.courses.count) courses, \(store.events.count) events")

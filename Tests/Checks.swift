@@ -48,6 +48,8 @@ struct Checks {
         urgency()
         menuBar()
         timeGrid()
+        macProExport()
+        macProInbox()
         realFolders()
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -657,6 +659,128 @@ struct Checks {
               "a 7:30 AM class opens the grid at 7")
         check(TimeGrid.hours(for: [item("Holiday", .holiday, date(2026, 10, 12), end: date(2026, 10, 13), allDay: true)], calendar: cal) == 8..<22,
               "all-day items leave the hours alone")
+    }
+
+    // MARK: - Mac Pro export (Calendar/watdash.json)
+
+    static func macProExport() {
+        let classes = "/Users/x/Classes"
+        var math = Course(code: "MATH 137", title: "Calculus 1", colorIndex: 0)
+        math.folderPath = classes + "/Math137"
+        math.notesFile = "MATH_137.pdf"
+        math.pageMap = [NotesSection(section: "2.2", title: "Sequential characterization", page: 80),
+                        NotesSection(section: "2.3", title: "Limit laws", page: 88),
+                        NotesSection(section: "2.7", title: "Continuity", page: 110)]
+        let lecture = DashEvent(
+            id: "src:lec", title: "MATH 137 LEC 004", courseCode: "MATH 137", kind: .lecture,
+            start: date(2026, 9, 9, 10, 30), end: date(2026, 9, 9, 11, 20), location: "MC 2065",
+            recurrence: .weekly(on: [2, 4, 6], until: date(2026, 12, 8, 23, 59)),
+            exceptionDates: [date(2026, 10, 7, 10, 30)],          // a lecture skipped by hand
+            timeZoneID: "America/Toronto")
+        let readingWeek = DashEvent(id: "noclass:rw", title: "Reading week", kind: .holiday,
+                                    start: date(2026, 10, 10), end: date(2026, 10, 19), isAllDay: true,
+                                    timeZoneID: "America/Toronto", cancelsClasses: true)
+        let officeHours = DashEvent(id: "oh", title: "MATH 137 office hours", courseCode: "MATH 137", kind: .officeHours,
+                                    start: date(2026, 10, 6, 14), end: date(2026, 10, 6, 15), timeZoneID: "America/Toronto")
+        let proposed = DashEvent(id: "maybe", title: "Unsure capture", kind: .event, start: date(2026, 10, 8, 9),
+                                 end: date(2026, 10, 8, 10), status: .proposed)
+        let quiz = Assessment(courseCode: "MATH 137", title: "Quiz 4", kind: .quiz, due: date(2026, 10, 19, 17, 30),
+                              coverage: "2.2–2.3", location: "MC 1085, seat E-14")
+        let done = Assessment(courseCode: "MATH 137", title: "A1", kind: .assignment, due: date(2026, 10, 7, 16, 5), isDone: true)
+        let graded = Assessment(courseCode: "MATH 137", title: "Quiz 3", kind: .quiz, due: date(2026, 10, 5, 17, 30), score: 18, outOf: 20)
+        let final = Assessment(courseCode: "MATH 137", title: "Final exam", kind: .exam)
+        let palette: [(Double, Double, Double)] = [(0.26, 0.47, 0.96), (0.86, 0.24, 0.56)]
+        func input(officeHours on: Bool, now: Date = date(2026, 10, 8, 12)) -> MacProExport.Input {
+            MacProExport.Input(courses: [math], events: [lecture, readingWeek, officeHours, proposed],
+                               assessments: [quiz, done, graded, final], termName: "Fall 2026",
+                               termEnd: date(2026, 12, 23), classesFolder: classes, officeHours: on,
+                               palette: palette, notes: [], now: now)
+        }
+
+        let doc = MacProExport.document(input(officeHours: false), exported: "2026-10-08 12:00")
+        check(doc.format == "watdash-calendar" && doc.version == 1, "format and version")
+        check(doc.from == "2026-09-28" && doc.to == "2026-12-23", "a week back (from its Monday) to the end of exams, got \(doc.from)…\(doc.to)")
+        check(doc.courses.first?.color == "#4278F5", "course colour as hex, got \(doc.courses.first?.color ?? "nil")")
+        check(doc.courses.first?.folder == "Math137" && doc.courses.first?.notesFile == "Math137/MATH_137.pdf",
+              "folder and notes relative to the repository")
+
+        let lectures = doc.classes.filter { $0.kind == "lecture" }
+        check(!lectures.contains { $0.start == "2026-10-07 10:30" }, "a skipped lecture isn't exported")
+        check(!lectures.contains { $0.start.hasPrefix("2026-10-12") || $0.start.hasPrefix("2026-10-14") || $0.start.hasPrefix("2026-10-16") },
+              "reading week cancels its lectures")
+        check(lectures.contains { $0.start == "2026-10-19 10:30" && $0.end == "2026-10-19 11:20" && $0.room == "MC 2065" },
+              "lectures after reading week, with their room")
+        check(lectures.first?.start == "2026-09-28 10:30", "the first lecture is the Monday a week back, got \(lectures.first?.start ?? "nil")")
+        check(!doc.classes.contains { $0.kind == "officeHours" }, "office hours left out when the switch is off")
+        check(!doc.classes.contains { $0.id == "maybe" }, "proposals waiting in the inbox aren't exported")
+        check(doc.allDay.contains { $0.title == "Reading week" && $0.first == "2026-10-10" && $0.last == "2026-10-18" },
+              "reading week as an all-day span, last day inclusive")
+
+        let exported = doc.deadlines.first { $0.title == "Quiz 4" }
+        check(exported?.id == "assessment:\(quiz.id.uuidString)", "deadline id is WatDash's assessment id")
+        check(exported?.due == "2026-10-19 17:30" && exported?.end == "2026-10-19 18:20", "quiz time and writing window")
+        check(exported?.room == "MC 1085" && exported?.seat == "E-14", "room and seat split")
+        check(exported?.seated == true && exported?.canTick == true && exported?.done == false, "quiz is seated, tickable, not done")
+        check(exported?.sections?.map(\.page) == [80, 88], "covers 2.2–2.3 → notes pages 80 and 88")
+        check(doc.deadlines.first { $0.title == "A1" }?.done == true, "a ticked assignment is done")
+        let markedQuiz = doc.deadlines.first { $0.title == "Quiz 3" }
+        check(markedQuiz?.done == true && markedQuiz?.canTick == false, "a marked quiz is done and can't be unticked")
+        let tba = doc.deadlines.first { $0.title == "Final exam" }
+        check(tba != nil && tba?.due == nil, "an undated final is exported without a date")
+        check(doc.deadlines.last?.title == "Final exam", "undated work sorts last")
+
+        let withHours = MacProExport.document(input(officeHours: true), exported: "2026-10-08 12:00")
+        check(withHours.classes.contains { $0.kind == "officeHours" && $0.start == "2026-10-06 14:00" }, "office hours included when the switch is on")
+
+        // Stable: the same store gives the same ids and the same bytes.
+        let again = MacProExport.document(input(officeHours: false), exported: "2026-10-08 12:00")
+        check(again == doc, "exporting twice gives the same document")
+        let a = try? MacProExport.encode(doc), b = try? MacProExport.encode(again)
+        check(a != nil && a == b, "and the same bytes")
+        check(MacProExport.decode(a ?? Data()) == doc, "the file reads back")
+        let later = MacProExport.document(input(officeHours: false, now: date(2026, 10, 8, 18)), exported: "2026-10-08 18:00")
+        check(MacProExport.sameContent(doc, later) && later.exported != doc.exported, "the export time alone isn't a change")
+        let nextWeek = MacProExport.document(input(officeHours: false, now: date(2026, 10, 13, 9)), exported: "2026-10-13 09:00")
+        check(!MacProExport.sameContent(doc, nextWeek) && nextWeek.from == "2026-10-05", "the window moves on with the week")
+        check(Set(doc.classes.map(\.id)).count == doc.classes.count, "class ids are unique")
+        let shared = Set(doc.classes.map(\.id)).intersection(nextWeek.classes.map(\.id))
+        check(shared.contains("src:lec@\(Int(date(2026, 10, 19, 10, 30).timeIntervalSince1970))"), "an occurrence keeps its id as the window moves")
+
+        check(MacProExport.roomAndSeat("MC 1085, seat E-14") == ("MC 1085", "E-14"), "room, seat")
+        check(MacProExport.roomAndSeat("PAC gym, Seat 112") == ("PAC gym", "112"), "Seat in capitals")
+        check(MacProExport.roomAndSeat("STC 0010") == ("STC 0010", nil), "room only")
+        check(MacProExport.roomAndSeat("  ") == (nil, nil), "nothing")
+    }
+
+    static func macProInbox() {
+        let tick = MacProInbox.parse("done: assessment:6F1D2C4A-0000-4000-8000-000000000001\nwritten: 2026-10-10 14:03\nfrom: Syllabus on the Mac Pro\n")
+        check(tick?.action == .done("assessment:6F1D2C4A-0000-4000-8000-000000000001"), "done note")
+        check(tick?.written == date(2026, 10, 10, 14, 3), "written: is Waterloo time")
+        check(MacProInbox.parse("undone: assessment:X\r\n")?.action == .undone("assessment:X"), "undone note, CRLF")
+        check(MacProInbox.parse("# from the Mac Pro\nCapture:  math137 quiz 5 oct 26 5:30pm \n")?.action == .capture("math137 quiz 5 oct 26 5:30pm"),
+              "capture note, key in any case, comment skipped, trimmed")
+        check(MacProInbox.parse("capture: A4 due fri\ndone: x")?.action == .capture("A4 due fri"), "the first note line wins")
+        check(MacProInbox.parse("hello\nwritten: 2026-10-10 14:03") == nil, "no note line: unreadable")
+        check(MacProInbox.parse("done:   ") == nil, "an empty note is unreadable")
+        check(MacProInbox.parse("") == nil, "an empty file is unreadable")
+        check(MacProInbox.summary("\n# c\ndone: x\nwritten: y") == "done: x", "summary is the note line")
+
+        check(MacProInbox.isNotePath("Inbox/2026-10-10-140312-1a2b3c.txt"), "a note's path")
+        check(!MacProInbox.isNotePath("Inbox/README.md") && !MacProInbox.isNotePath("Inbox/.hidden.txt"), "not notes")
+        check(!MacProInbox.isNotePath("Inbox/sub/x.txt") && !MacProInbox.isNotePath("Calendar/x.txt") && !MacProInbox.isNotePath("x.txt"),
+              "only directly in Inbox/")
+
+        let quiz = Assessment(courseCode: "MATH 137", title: "Quiz 4", kind: .quiz, due: date(2026, 10, 19, 17, 30))
+        let other = Assessment(courseCode: "ECON 101", title: "Test 2", kind: .test, due: date(2026, 11, 4, 19))
+        let id = "assessment:\(quiz.id.uuidString)"
+        check(MacProInbox.assessmentIndex(forExportID: id, in: [other, quiz]) == 1, "an export id finds its assessment")
+        check(MacProInbox.assessmentIndex(forExportID: "assessment:\(quiz.id.uuidString.lowercased())", in: [quiz]) == 0, "in either case")
+        check(MacProInbox.assessmentIndex(forExportID: "src:lec@1760000000", in: [quiz]) == nil, "a class can't be ticked")
+        let ticked = MacProInbox.settingDone(true, id: id, in: [other, quiz])
+        check(ticked?.assessments[1].isDone == true && ticked?.assessments[0].isDone == false, "done ticks only that one")
+        check(ticked?.message == "MATH 137 Quiz 4 marked done.", "and says so")
+        check(MacProInbox.settingDone(false, id: id, in: ticked?.assessments ?? [])?.assessments[1].isDone == false, "undone unticks")
+        check(MacProInbox.settingDone(true, id: "assessment:\(UUID().uuidString)", in: [quiz]) == nil, "an unknown id changes nothing")
     }
 
     // MARK: - Real course folders (smoke test, informational)

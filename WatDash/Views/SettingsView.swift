@@ -214,10 +214,44 @@ struct CalendarSettings: View {
                     Button("Remove WatDash Calendars", role: .destructive) { CalendarSync.shared.removeOwnCalendars(store) }
                 }
             }
+            #if os(macOS)
+            MacProSettings()
+            #endif
         }
         .formStyle(.grouped)
     }
 }
+
+#if os(macOS)
+/// Syllabus on the Mac Pro (OS X 10.9) reads the calendar from the classes
+/// repository and leaves its changes there as notes.
+struct MacProSettings: View {
+    @Environment(AppStore.self) private var store
+    private var sync: MacProSync { MacProSync.shared }
+
+    var body: some View {
+        Section("Mac Pro") {
+            Toggle("Sync with Syllabus on the Mac Pro", isOn: Binding(
+                get: { store.settings.macProSync },
+                set: { on in
+                    setting(store, \.macProSync).wrappedValue = on
+                    if on { sync.syncNow() }
+                }
+            ))
+            Text("Writes this calendar to Calendar/watdash.json in the classes repository, and applies the ticks and captures the Mac Pro leaves in Inbox/. WatDash uses its own copy of the repository, in Application Support, so nothing uncommitted in the classes folder is touched.")
+                .font(.caption).foregroundStyle(.secondary)
+            if let remote = sync.remote {
+                LabeledContent("Repository", value: remote)
+            }
+            Text(sync.statusLine)
+                .font(.caption)
+                .foregroundStyle(sync.lastError == nil ? Color.secondary : Color.red)
+            Button("Sync Now") { sync.syncNow() }
+                .disabled(!store.settings.macProSync || sync.isRunning)
+        }
+    }
+}
+#endif
 
 struct NotificationSettings: View {
     @Environment(AppStore.self) private var store

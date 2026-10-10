@@ -21,6 +21,8 @@ swiftc -O -o "$OUT/checks" -parse-as-library \
   WatDash/Services/Urgency.swift \
   WatDash/Services/MenuBarStatus.swift \
   WatDash/Services/TimeGrid.swift \
+  WatDash/Services/MacProExport.swift \
+  WatDash/Services/MacProInbox.swift \
   WatDash/Importers/*.swift \
   Tests/Checks.swift
 
