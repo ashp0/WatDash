@@ -33,6 +33,11 @@ own Info.plist and no entitlements, and signs automatically, so a free team
 works there too (with Apple's 7-day profiles on a device; the simulator needs
 nothing).
 
+iOS also gets its own bundle id. An App ID is shared across platforms, and the
+Mac's one carries the team-prefixed App Group; Apple refuses to issue an iOS
+profile for an App ID whose group doesn't start with "group.", so a device
+build under the Mac's id fails before it compiles.
+
 The widget extension is macOS-only. Its data arrives through an App Group,
 and on iOS a group must be registered in a provisioning profile, which a
 personal team can't get (see WatAlarm's generator). The embed step and the
@@ -64,6 +69,7 @@ PROJECT_NAME = "WatDash"
 APP_TARGET = "WatDash"
 EXT_TARGET = "WatDashWidgets"
 APP_BUNDLE_ID = "com.ashwinpaudel.WatDash"
+APP_IOS_BUNDLE_ID = "com.ashwinpaudel.WatDash.iOS"
 EXT_BUNDLE_ID = "com.ashwinpaudel.WatDash.Widgets"
 APP_GROUP = f"{ARGS.team}.com.ashwinpaudel.WatDash"
 DEPLOYMENT_TARGET = "26.0"
@@ -484,6 +490,9 @@ APP_COMMON = {
     "\"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]\"": "\"$(inherited) @executable_path/Frameworks\"",
     "\"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]\"": "\"$(inherited) @executable_path/Frameworks\"",
     "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
+    # See "iOS and iPadOS" above for why iOS can't share the Mac's App ID.
+    "\"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]\"": APP_IOS_BUNDLE_ID,
+    "\"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]\"": APP_IOS_BUNDLE_ID,
     "PRODUCT_NAME": "\"$(TARGET_NAME)\"",
     "COMBINE_HIDPI_IMAGES": "YES",
 }

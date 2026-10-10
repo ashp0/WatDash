@@ -576,6 +576,8 @@
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = WatDash/Info-iOS.plist;
 				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) @executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) @executable_path/Frameworks";
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.ashwinpaudel.WatDash.iOS;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = com.ashwinpaudel.WatDash.iOS;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -649,6 +651,8 @@
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = WatDash/Info-iOS.plist;
 				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) @executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) @executable_path/Frameworks";
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.ashwinpaudel.WatDash.iOS;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = com.ashwinpaudel.WatDash.iOS;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
